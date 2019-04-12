@@ -9,17 +9,17 @@ before_script:
 - sudo apt-get install armake -y
 script:
 - export VERSION=`cat description.ext  | grep -o 'onLoadName = ".*"' | grep -o 'v[0-9.][0-9.]*'`
-- armake build -w unquoted-string -w redefinition-wo-undef -w excessive-concatenation -x ".*" -x "*.pbo" -x "*.md" . 7Cav_FullSpectrum_$VERSION.Altis.pbo
+- armake build -w unquoted-string -w redefinition-wo-undef -w excessive-concatenation -x ".*" -x "*.pbo" -x "*.md" . 7Cav_FullSpectrum_$VERSION.WL_Rosche.pbo
 - git tag $VERSION
 deploy:
   if:
     branch: master
   provider: releases
   skip_cleanup: true
-  file: '7Cav_FullSpectrum_$VERSION.Altis.pbo'
+  file: '7Cav_FullSpectrum_$VERSION.WL_Rosche.pbo'
   on:
     branch: master
-    repo: 7Cav/7Cav_FullSpectrum_V4.Altis
-  name: '7th Cavalry Full Spectrum $VERSION - Altis'
+    repo: 7Cav/7Cav_FullSpectrum_V4.WL_Rosche
+  name: '7th Cavalry Full Spectrum $VERSION - WL_Rosche'
   api_key:
     secure: otHQquFSBVP3u/r/CCUeFyXAiRWbRUH8sjAa3y88UjMcB6ybP5njwmQ4kO5/tyOtFNHpiWCANKJfA950KAslTTkQPWiLZuQgoeoz2t/GilK6GVv1/xvf5Q3EnMnVFY6OaN0GyMH/V7bRWDUENmv6QqVQwx/WKxZPPOE77/ykF/VOKBaQHoFEYMbA4MmTbciF7Qr2Q2Zkip8/SKF2hPJhtrqcM8N1yKqN75QSWA3FMKewWLJ0vD6skXiuYaqwRuGRWFJv7pUhletlKsWM6KX7MvjU6xAhkLYALE3yNEBDunrxeuEydcSBTV1GHYoT4CX4pXvhkxohsFK7wwl1GXvt9NqdrWkdOe1s6gJzkZG8hIzfuQ3BrpYhdbdqmHOkuawsBxpaOMKgsS1MQCtSS9Fs6rGa8s2JDueBaUOsQxo3YHLj+daHqO5LGdoKJ6QhhxEnIQ4PJu0UZ3OvSJo7+PWVQYZhDrt24FU8uct5TGTQCZioiqCxnlA7SnKaIcboeY5WEW+WMO6tbuyxNah3wPb5rdGjcXDxwXubHHX6Dp+39pRruMHkripjf+BbnmKVdw9izQGMQO+FtSlOzIAv2aVKkS3aFp8+X9sWJEK54elTfIAoTAZwBTN8tm9OStXJLJRk2PsrY1/kCPBBwCXA21aT3eCdirLKf8OSJkPJ8WVNd70=

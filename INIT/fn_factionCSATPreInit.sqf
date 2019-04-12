@@ -84,17 +84,26 @@ SPM_AirPatrol_RatingsEast = SPM_AirPatrol_CallupsEast apply { [_x select 0, (_x 
 SPM_Armor_CallupsEastAPCs =
 [
 	["LOP_US_BMP2D",
-		[20, 3, 0.2,
+		[20, 3, 0.5,
 			{
 			}]],
 	["LOP_US_BMP1",
-		[20, 3, 0.2,
+		[20, 3, 0.5,
 			{
 			}]],
 	["LOP_US_BTR70",
-		[20, 3, 0.2,
+		[20, 3, 1,
 			{
-			}]]
+				params ["_unit"];
+				[_unit] spawn {
+					params ["_unit"];
+					// RHS bug, need to remove this crew member to move the vic
+					waitUntil { sleep 1; count (fullCrew [_unit, "Turret"]) > 0 };
+					deleteVehicle (fullCrew [_unit, "Turret"] select 0 select 0);
+				}
+			}]],
+	["LOP_US_UAZ_SPG",
+		[40, 1, 0.4, {}]]
 			
 ];
 
@@ -103,14 +112,14 @@ SPM_Armor_RatingsEastAPCs = SPM_Armor_CallupsEastAPCs apply { [_x select 0, (_x 
 // 120pts
 SPM_Armor_CallupsEastTanks =
 [
-	["LOP_US_T72BC",
+	["rhs_t80um",
 		[60, 2, 1.0,
 			{
 				params ["_unit"];
 				_unit addEventHandler ["Fired",{(_this select 0) setVehicleAmmo 1}];
 			}]],
 	["LOP_US_T72BB",
-		[60, 2, 1.0,
+		[60, 2, 0.4,
 			{				
 				params ["_unit"];
 				_unit addEventHandler ["Fired",{(_this select 0) setVehicleAmmo 1}];
@@ -163,15 +172,15 @@ SPM_InfantryGarrison_CallupsEast =
 SPM_InfantryGarrison_InitialCallupsEast =
 [
 	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_Patrol_section"), [1, 4, 1.0]],
-	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_AA_section"), [1, 4, 0.10]],
-	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_AT_section"), [1, 4, 0.30]],
+	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_AA_section"), [1, 4, 0.30]],
+	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_AT_section"), [1, 4, 0.60]],
 	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_FT_section"), [1, 2, 1.0]]
 ];
 
 SPM_InfantryGarrison_InitialCallupsEastAA =
 [
 	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_Patrol_section"), [1, 4, 1.0]],
-	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_AA_section"), [1, 4, 0.10]],
+	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_AA_section"), [1, 4, 1.0]],
 	[(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_FT_section"), [1, 2, 1.0]]
 ];
 
@@ -197,11 +206,13 @@ SPM_InfantryGarrison_InitialCallupsEastWater =
 SPM_MissionAdvance_Patrol_CallupsEast =
 [
 	["LOP_US_UAZ_DshKM",
-		[10, 2, 1.0, {}]],
+		[10, 1, 1.0, {}]],
 	["LOP_US_UAZ_AGS",
-		[15, 2, 0.4,{}]],
+		[15, 1, 1.0, {}]],
 	["LOP_US_BMP2D",
-		[10, 3, 0.4,{}]]
+		[20, 1, 1.0, {}]],
+	["LOP_US_BTR60",
+		[20, 1, 1.0, {}]]
 ];
 
 SPM_MissionAdvance_Patrol_RatingsEast = SPM_MissionAdvance_Patrol_CallupsEast apply { [_x select 0, (_x select 1) select [0, 2]] };

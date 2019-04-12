@@ -7,6 +7,9 @@ addMissionEventHandler ["PlayerDisconnected", SERVER_PlayerDisconnected];
 
 _null = [] execVM "scripts\sessionTimeMessagesInit.sqf";
 
+// Disable RHS engine start up so vehicles move immediately when spawned
+RHS_ENGINE_STARTUP_OFF = 1;
+
 // Make sure armed civilians won't attack NATO
 civilian setFriend [west, 1];
 // Make sure AAF won't attack CSAT

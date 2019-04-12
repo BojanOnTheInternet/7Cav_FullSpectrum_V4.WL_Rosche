@@ -222,13 +222,37 @@ SPM_InfantryGarrison_RatingsWest =
 // Patrol cars
 
 SPM_MissionAdvance_Patrol_RatingsWest =
-[
-	["LOP_US_Infantry_MG", [10, 1]],
-	["LOP_US_Infantry_AT_Asst", [10, 1]],
-	["LOP_US_Infantry_Rifleman", [10, 1]],
-	["LOP_US_Infantry_TL", [10, 1]],
-	["LOP_US_Infantry_GL", [15, 1]],
-	["LOP_US_Infantry_Corpsman", [15, 1]],
-	["LOP_US_Infantry_AT", [30, 1]]
+[	
+	["rhsusf_army_ocp_officer", [10, 1]],
+	["rhsusf_army_ocp_jfo", [10, 1]],
+	["rhsusf_army_ocp_squadleader", [10, 1]],
+	["rhsusf_army_ocp_teamleader", [10, 1]],
+	["rhsusf_army_ocp_marksman", [10, 1]],
+	["rhsusf_army_ocp_machinegunner", [10, 1]],
+	["rhsusf_army_ocp_grenadier", [10, 1]],
+	["rhsusf_army_ocp_engineer", [10, 1]],
+	["rhsusf_army_ocp_medic", [10, 1]],
+	["rhsusf_army_ocp_maaws", [10, 1]],
+	["rhsusf_army_ocp_rifleman_m4", [10, 1]],
+	["rhsusf_army_ocp_rifleman_m4", [10, 1]],
+	["rhsusf_army_ocp_sniper_m24sws", [10, 1]],
+	["B_T_Soldier_SL_F", [10,1]],
+	["B_T_Soldier_TL_F", [10,1]],
+	["B_T_Soldier_Repair_F", [10,1]],
+	["B_T_soldier_mine_F", [10,1]],
+	["B_T_Soldier_Exp_F", [10,1]],
+	["B_T_Soldier_Engineer_F", [10,1]],
+	["rhsusf_army_ocp_combatcrewman", [10,1]],
+	["rhsusf_army_ocp_crewman", [10,1]],
+	["rhsusf_army_ocp_officer", [10,1]],
+	["rhsusf_army_ocp_driver", [10,1]],
+	["rhsusf_army_ocp_arb_riflemanl", [10,1]],
+	["rhsusf_army_ocp_arb_squadleader", [10,1]],
+	["rhsusf_army_ocp_arb_teamleader", [10,1]],
+	["rhsusf_army_ocp_arb_autorifleman", [10,1]],
+	["rhsusf_army_ocp_arb_grenadier", [10,1]],
+	["rhsusf_army_ocp_arb_rifleman", [10,1]],
+	["rhsusf_army_ocp_arb_medic", [10,1]],
+	["rhsusf_navy_marpat_wd_medic", [10,1]]
 ];
 

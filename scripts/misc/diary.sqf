@@ -83,6 +83,47 @@ player createDiaryRecord ["diary", ["Unit callsigns",
 <br/>
 "
 ]];
+
+player createDiaryRecord ["diary", ["Radio Channels",
+"
+<font face='EtelkaMonospacePro' size='10'><br/>01 - Gunslinger Platoon Net</font>
+<br/>            Used to communicate between infantry squads in field
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>02 - Aviation</font>
+<br/>            Used for air to air communications and CTAF/Air Traffic Control
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>03 thru 09 - Other Platoon Nets</font>
+<br/>            Used whenever there is an MCC or multiple platoons, also utilized if a Platoon comes in for a Platoon FTX
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>10 / 11 - IDF-1 and IDF-2</font>
+<br/>            Used to conduct indirect fire missions from artillery or mortars
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>12 / 13 - CAS-1 and CAS-2</font>
+<br/>            Used to call in fixed-wing or attack rotary close air support
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>14 - Ground-To-Air</font>
+<br/>            Used to conduct pick-up requests from logistical aviation units 
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>15 - Logistics</font>
+<br/>            Used by Apollo and Mustang personnel to dispatch where needed. 
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>16 - FARP Requests</font>
+<br/>            Used to communicate with Apollo personnel when you are inbound to a FARP as to what you need using the FARM acronym. FOXTROT - FUEL (state current fuel state if requesting FOXTROT) / ALPHA - AMMUNITION / ROMEO - REPAIRS / MIKE - MEDICAL (use triage category for multiple casualties) 
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>17 - Convoy</font>
+<br/>            Used when conducting a convoy 
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>18 - Zeus</font>
+<br/>            Used to communicate with a Zeus if required 
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>19 - CAG</font>
+<br/>            Classified 
+<br/>
+<font face='EtelkaMonospacePro' size='10'><br/>20 - Command</font>
+<br/>            Used to coordinate across different platoons or other big picture items 
+<br/>
+"
+]];
 #endif
 
 if (not (player diarySubjectExists "teamspeak")) then { player createDiarySubject ["teamspeak", "Teamspeak"] };

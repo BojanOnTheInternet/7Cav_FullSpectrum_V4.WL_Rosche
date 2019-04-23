@@ -137,16 +137,6 @@ SPM_Armor_RatingsWestAir =
 	["RHS_MELB_AH6M_H", [_littlebird_rating, 1]],
 	["RHS_MELB_AH6M_L", [_littlebird_rating, 1]],
 	["RHS_MELB_AH6M_M", [_littlebird_rating, 1]],
-	["RHS_MELB_MH6M", [_littlebird_rating, 1]],
-
-	["FIR_F15C_Blank", [_eagle_rating, 1]],
-	["FIR_F15D_Blank", [_eagle_rating, 1]],
-	["FIR_F15E_Blank", [_eagle_rating, 1]],
-	["FIR_F15J_204TFS_TACMEET", [_eagle_rating, 1]],
-	["FIR_F15J_303TFS_TACMEET", [_eagle_rating, 1]],
-	["FIR_F15J_306TFS", [_eagle_rating, 1]],
-	["FIR_F15J_IRST", [_eagle_rating, 1]],
-	["FIR_F15K_1st", [_eagle_rating, 1]],
 
 	["FIR_A10C", [_eagle_rating, 1]],
 	["FIR_F16C_Blank", [_eagle_rating, 1]],

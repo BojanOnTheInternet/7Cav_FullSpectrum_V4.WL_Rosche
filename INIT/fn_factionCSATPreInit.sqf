@@ -4,14 +4,14 @@ if (not isServer && hasInterface) exitWith {};
 
 SPM_AirDefense_CallupsEast =
 [
-	["LOP_US_ZSU234", [40, 3, 1.0,
+	["LOP_US_ZSU234", [60, 1, 1.0,
 		{
 			params ["_unit"];
 
 			_unit engineOn true;
 
 		}]],
-	["LOP_US_Igla_AA_pod", [120, 1, 1.0,
+	["LOP_US_Igla_AA_pod", [60, 1, 1.0,
 		{
 			params ["_unit"];
 		}]]
@@ -103,7 +103,7 @@ SPM_Armor_CallupsEastAPCs =
 				}
 			}]],
 	["LOP_US_UAZ_SPG",
-		[40, 1, 0.4, {}]]
+		[40, 1, 0.2, {}]]
 			
 ];
 

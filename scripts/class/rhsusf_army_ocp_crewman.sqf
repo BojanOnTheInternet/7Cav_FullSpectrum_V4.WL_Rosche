@@ -13,5 +13,5 @@ if (_state == "init") then
 
 if (_state == "respawn") then
 {
-	[TypeFilter_ArmoredVehicles] call JB_fnc_manualDriveInitPlayer;
+	
 };

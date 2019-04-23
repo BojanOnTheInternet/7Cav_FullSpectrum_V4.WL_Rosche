@@ -17,9 +17,6 @@ private _broken_arms = {
 };
 
 private _can_splint = {
-	// Cannot splint in vehicle
-	if !(player == vehicle player) exitWith { false };
-
 	//Get CBA settings
 	private _medic_requirement = missionNamespace getVariable ["simple_splint_medic_requirement", 0];
 	private _require_splint = missionNamespace getVariable ["simple_splint_require_item", true];

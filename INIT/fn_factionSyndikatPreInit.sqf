@@ -2,7 +2,7 @@ if (not isServer && hasInterface) exitWith {};
 
 // Infantry
 
-SPM_InfantryGarrison_RatingsSyndikat = "toLower (configName _x) find 'LOP_PMC_INFANTRY_' == 0" configClasses (configFile >> "CfgVehicles");
+SPM_InfantryGarrison_RatingsSyndikat = "toLower (configName _x) find 'lop_pmc_' == 0" configClasses (configFile >> "CfgVehicles");
 SPM_InfantryGarrison_RatingsSyndikat = SPM_InfantryGarrison_RatingsSyndikat apply { [configName _x, [1, 1]] };
 
 SPM_InfantryGarrison_CallupsSyndikat =

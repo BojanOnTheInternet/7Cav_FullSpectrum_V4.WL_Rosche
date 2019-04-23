@@ -1401,7 +1401,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_CallMortars) =
 				private _targetPosition = _x select 1;
 
 				// Introduce spotting/reporting inaccuracy of 10% (a target 300 meters away will be mistargeted by up to 30 meters)
-				private _wobble = (_targetPosition distance (_x select 4)) * 0.2;
+				private _wobble = (_targetPosition distance (_x select 4)) * 0.5;
 				_targetPosition = _targetPosition vectorAdd [-_wobble / 2 + random _wobble, -_wobble / 2 + random _wobble, 0];
 
 				private _fireMission = [_targetPosition, [[0, "8Rnd_82mm_Mo_shells"]]] call OO_CREATE(MortarFireMission);

@@ -31,4 +31,7 @@ if (_consume_splint) then {
 [_target, "activity", "%1 applied splint to %2", [[_player, false, true] call ace_common_fnc_getName, [_target, false, true] call ace_common_fnc_getName]] call ace_medical_fnc_addToLog;
 [_target, "activity_view", "%1 applied splint to %2", [[_player, false, true] call ace_common_fnc_getName, [_target, false, true] call ace_common_fnc_getName]] call ace_medical_fnc_addToLog;
 
-player switchMove "AmovPknlMstpSrasWrflDnon";
+// Don't do animations in vehicle
+if (_player == vehicle _player) then { 
+  _player switchMove "AmovPknlMstpSrasWrflDnon"
+  };

@@ -45,7 +45,7 @@ if (_unit isKindOf "Man") then {
 
 	[_unit] call CLIENT_SetInfantryVehiclePermissions;
 	{
-		_unit setVariable [_x, [[_extra_permission, [], {}]] + (_unit getVariable _x)];
+		_unit setVariable [_x, [[_extra_permission, [], {}]] + (_unit getVariable _x), true];
 	} forEach ["VP_Driver", "VP_Pilot", "VP_Gunner", "VP_Turret"];
 
 } else {

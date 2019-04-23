@@ -112,6 +112,7 @@ TypeFilter_ArmoredVehicles =
 [
 	["MBT_03_base_F", true], // Leopard 2
 	["MBT_01_base_F", true], // Most other western tanks (Abrams, Merkava)
+	["RHS_M2A3*", true], // Add Bradleys here too so Manual Drive works for all
 	["All", false]
 ];
 
@@ -279,6 +280,7 @@ CLIENT_SetInfantryVehiclePermissions =
 	_player setVariable ["VP_Turret", _permissions];
 
 	_player setVariable ["VP_Pilot", []];
+	[TypeFilter_ArmoredVehicles] call JB_fnc_manualDriveInitPlayer;
 };
 
 CLIENT_SetArmorCrewVehiclePermissions =
@@ -651,7 +653,7 @@ DOC_ZeusBindings = "
 <font face='EtelkaMonospacePro' size='10'>CTRL+SHIFT+L</font> Toggles a daylight mode visible only to you while in Zeus.<br/>";
 
 DOC_MissionController = "<font size='16'>Mission Controller</font><br/>
-As a mission controller, you have full access to Zeus as well as some additional keyboard bindings and text commands.  Note that all commands keywords can be abbreviated to as few as three letters.  For example, the command '&amp;mc advance stop' can be shortened to '&amp;mc adv sto'.<br/>";
+As a mission controller, you have full access to Zeus as well as some additional keyboard bindings and text commands.  Note that all commands keywords can be abbreviated to as few as three letters.  For example, the command 'mc advance stop' can be shortened to 'mc adv sto'.<br/>";
 
 DOC_MissionControllerCommands = "
 <font face='EtelkaMonospacePro' size='10'>mc missionend get</font><br/><br/>

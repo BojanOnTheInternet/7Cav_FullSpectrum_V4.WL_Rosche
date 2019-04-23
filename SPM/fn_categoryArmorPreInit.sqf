@@ -588,8 +588,10 @@ OO_TRACE_DECL(SPM_Armor_Update) =
 
 					if (count _groundSpawnpoint == 0) then
 					{
-						_groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), _center, _outerRadius, OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetRoadSpawnpoint;
-						if (count (_groundSpawnpoint select 0) == 0) then { _groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetGroundSpawnpoint };
+						_groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetGroundSpawnpoint;
+						// Comments made by Bojan
+						// _groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), _center, _outerRadius, OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetRoadSpawnpoint;
+						// if (count (_groundSpawnpoint select 0) == 0) then { _groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetGroundSpawnpoint };
 					};
 					_groundSpawnpoint
 				};

@@ -685,7 +685,8 @@ OO_TRACE_DECL(SPM_Util_GetGroundSpawnpoint) =
 
 	if (count _positions == 0) exitWith { [[],0] };
 
-	private _position = _positions select 0;
+	//private _position = _positions select 0; Bojan \/
+	private _position = _positions select (random (count _positions));
 
 	[_position, _position getDir _areaPosition]
 };

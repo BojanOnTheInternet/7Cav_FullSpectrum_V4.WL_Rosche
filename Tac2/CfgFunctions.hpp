@@ -5,10 +5,25 @@ class Tac2 {
 		class fortifyPermissionsInitPlayer;
 		class treeCutterInitPlayer;
 		class ammoBoxSpawner;
+		class hasLineOfSight;
 	};
 	class modules {
 		file = "Tac2\modules";
 		class initAresModules;
-		class addVehiclePermissions;
+		class modAddGResistance;
+		class modAddVehiclePermissions;
+		class modChainUnit;
+		class modDefineCivilians;
+		class modSetUndercoverAuto;
+		class modSetUndercoverManual;
+		class modUnchainUnit;
+		class modUnsetUndercover;
+	};
+	class modules_impl {
+		file = "Tac2\modules\impl";
+		class chainUnchainUnit;
+		class setUndercoverAuto;
+		class unsetUndercoverAuto;
+		class updateUnitRatings;
 	};
 };

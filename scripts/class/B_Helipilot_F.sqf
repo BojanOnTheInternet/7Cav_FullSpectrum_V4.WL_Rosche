@@ -14,7 +14,7 @@ if (_state == "init") then
 		player setVariable [_x, [[TypeFilter_TransportRotory, [], {}]] + (player getVariable _x)];
 	} forEach ["VP_Pilot"];
 	{
-		player setVariable [_x, [[TypeFilter_BaseServiceVehicles, [], {}]] + (player getVariable _x)];
+		player setVariable [_x, [[TypeFilter_All + , [], {}]] + (player getVariable _x)];
 	} forEach ["VP_Driver"];
 
 	// Override the infantry turret permissions so we can enable the copilot as appropriate

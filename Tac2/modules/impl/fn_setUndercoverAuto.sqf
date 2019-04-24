@@ -16,16 +16,19 @@ UNDERCOVER_resetEHs = {
 	_EHWeapon = player getVariable ["undercoverEHWeapon",-1];
 	if (_EHWeapon > 0) then {
 		["weapon", _EHWeapon] call CBA_fnc_removePlayerEventHandler;
+		player setVariable ["undercoverEHWeapon", nil];
 	};
 
-	_EHFired = player getVariable ["undercoverEHFired",-1];
-	if (_EHFired > 0) then {
-		player removeEventHandler ["FiredMan", _EHFired];
+	_EHFiredAce = player getVariable ["undercoverEHFiredAce",-1];
+	if (_EHFiredAce > 0) then {
+		["ace_firedPlayer", _EHFiredAce] call CBA_fnc_removeEventHandler;
+		player setVariable ["undercoverEHFiredAce", nil];
 	};
 
 	_EHRespawn = player getVariable ["undercoverEHRespawn",-1];
 	if (_EHRespawn > 0) then {
 		player removeEventHandler ["Respawn", _EHRespawn];
+		player setVariable ["undercoverEHRespawn", nil];
 	};
 };
 
@@ -112,23 +115,19 @@ _EHWeapon = ["weapon", {
 player setVariable ["undercoverEHWeapon",_EHWeapon];
 
 
-// Player fires
-_EHFired = player addEventHandler ["FiredMan", {
+// ACE adv. throwing and firing
+_EHFiredAce = ["ace_firedPlayer", {
+	private _nearEnemies = [];
 	if ([player] call UNDERCOVER_isSuppressed) then {
-		private _nearEnemies = player nearEntities ["Man", UNDERCOVER_suppresedRange] select { side _x != side player && side _x != west};
+		_nearEnemies = player nearEntities ["Man", UNDERCOVER_suppresedRange] select { side _x != side player && side _x != west};
 	} else {
-		private _nearEnemies = player nearEntities ["Man", UNDERCOVER_unsuppresedRange] select { side _x != side player && side _x != west}; 
+		_nearEnemies = player nearEntities ["Man", UNDERCOVER_unsuppresedRange] select { side _x != side player && side _x != west}; 
 	};
 	if (count _nearEnemies > 0) then {
 		[] call UNDERCOVER_setCoverBlown;
 	};	
-}];
-player setVariable ["undercoverEHFired",_EHFired];
-
-// ACE adv. throwing
- ["ace_firedPlayer", {
-	 [] call UNDERCOVER_setCoverBlown;
- }] call CBA_fnc_addEventHandler;
+}] call CBA_fnc_addEventHandler;
+player setVariable ["undercoverEHFiredAce",_EHFiredAce];
 
 // Player respawns
 _EHRespawn = player addEventHandler ["Respawn", {

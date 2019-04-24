@@ -23,8 +23,5 @@ if (count _dialogResult == 0) exitWith {};
 _dialogResult params ["_a", "_b", "_c", "_d"];
 
 {
-	// We run this on the server so we can get the player's ID, so we can then run it on them
-	[[[parseNumber _a, parseNumber _b, parseNumber _c, parseNumber _d], owner _x], {
-		_this select 0 remoteExec ["Tac2_fnc_setUndercoverAuto", _this select 1, false];
-	}] remoteExec ["call", 2, false]	
+	[parseNumber _a, parseNumber _b, parseNumber _c, parseNumber _d] remoteExec ["Tac2_fnc_setUndercoverAuto", _x];
 } forEach _selectedObjects

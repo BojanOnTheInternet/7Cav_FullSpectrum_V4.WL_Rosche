@@ -31,6 +31,12 @@ JB_WC_ShowMenuCondition =
 	[player, _vehicle] call _condition
 };
 
+JB_WC_EnableWeapon =
+{
+	private _message = _this call JB_fnc_weaponControlEnableWeapon;
+	if (_message != "") then { titleText [_message, "plain down", 0.3] };
+};
+
 JB_WC_ShowMenu =
 {
 	params ["_vehicle"];
@@ -54,7 +60,7 @@ JB_WC_ShowMenu =
 			_key = _key + 1;
 
 			//BUG: Use of the single quote version "' s" will freak out the parser
-			JB_WC_Menu pushBack [_action + (_turret select 1) + '''s ' + (_x select 1), [_key], "", -5, [["expression", format ["[vehicle player, %1, ""%2"", %3] call JB_fnc_weaponControlEnableWeapon", _turretPath, _x select 0, not _weaponEnabled]]], "1", "1"];
+			JB_WC_Menu pushBack [_action + (_turret select 1) + '''s ' + (_x select 1), [_key], "", -5, [["expression", format ["[vehicle player, %1, ""%2"", %3] call JB_WC_EnableWeapon", _turretPath, _x select 0, not _weaponEnabled]]], "1", "1"];
 		} forEach (_x select 2);
 	} forEach (_vehicle getVariable ["JB_WC_Turrets", []]);
 

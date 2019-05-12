@@ -43,32 +43,43 @@ SPM_MissionAdvance_ObjectiveStateToTaskState =
 	["error", "canceled"]
 ];
 
-SPM_MissionAdvance_ObjectiveTaskIdentifier =
+OO_TRACE_DECL(SPM_MissionAdvance_MissionTaskIdentifier) =
+{
+	params ["_mission"];
+
+	private _position = OO_GET(_mission,Strongpoint,Position);
+
+	[floor ((_position select 0) / 100), floor ((_position select 1) / 100)]
+};
+
+OO_TRACE_DECL(SPM_MissionAdvance_ObjectiveTaskIdentifier) =
 {
 	params ["_objective"];
 
+	if (OO_ISNULL(_objective)) exitWith { [] };
+
 	private _identifier = [];
-	private _next = _objective;
-	while { not OO_ISNULL(_next) } do
+	private _lastDefined = OO_NULL;
+
+	while { not OO_ISNULL(_objective) } do
 	{
-		_identifier = OO_REFERENCE(_next) + _identifier;
-		_next = OO_GETREF(_next,MissionObjective,ObjectiveParent);
+		_lastDefined = _objective;
+		_identifier = OO_REFERENCE(_objective) + _identifier;
+		_objective = OO_GETREF(_objective,MissionObjective,ObjectiveParent);
 	};
-	private _mission = OO_GETREF(_objective,Category,Strongpoint);
-	_identifier = OO_REFERENCE(_mission) + _identifier;
+	_identifier = ([OO_GETREF(_lastDefined,Category,Strongpoint)] call SPM_MissionAdvance_MissionTaskIdentifier) + _identifier;
 
 	_identifier
 };
 
-SPM_MissionAdvance_ObjectiveParentTaskIdentifier =
+OO_TRACE_DECL(SPM_MissionAdvance_ObjectiveParentTaskIdentifier) =
 {
 	params ["_objective"];
 
 	private _parent = OO_GETREF(_objective,MissionObjective,ObjectiveParent);
 	if (not OO_ISNULL(_parent)) exitWith { [_parent] call SPM_MissionAdvance_ObjectiveTaskIdentifier };
 
-	private _mission = OO_GETREF(_objective,Category,Strongpoint);
-	OO_REFERENCE(_mission)
+	[OO_GETREF(_objective,Category,Strongpoint)] call SPM_MissionAdvance_MissionTaskIdentifier
 };
 
 OO_TRACE_DECL(SPM_MissionAdvance_SendNotification) =
@@ -88,7 +99,7 @@ OO_TRACE_DECL(SPM_MissionAdvance_SendNotification) =
 		{
 			_notificationType = "NotificationMissionDescription";
 
-			[_filter, OO_REFERENCE(_mission), [], OO_GET(_mission,Strongpoint,Position), [_message select 1, _message select 0, ""], "attack", true] call SPM_Task_Create;
+			[_filter, [_mission] call SPM_MissionAdvance_MissionTaskIdentifier, [], OO_GET(_mission,Strongpoint,Position), [_message select 1, _message select 0, ""], "attack", true] call SPM_Task_Create;
 
 			if (_filter isEqualType {}) then { [_filter] remoteExec ["SPM_MissionAdvance_C_SeeTasksMessage", 0] } else { [] remoteExec ["SPM_MissionAdvance_C_SeeTasksMessage", _filter] };
 		};
@@ -132,7 +143,7 @@ OO_TRACE_DECL(SPM_MissionAdvance_Create) =
 
 	private _strongpointName = format ["Advance Operation (%1)", _operationName];
 	OO_SET(_mission,Strongpoint,Name,_strongpointName);
-	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeObject);
+	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeCategoryObject);
 	OO_SET(_mission,Strongpoint,SendNotification,SPM_MissionAdvance_SendNotification);
 	OO_SET(_mission,Mission,Name,_operationName);
 	OO_SET(_mission,Strongpoint,ControlRadius,_controlRadius);
@@ -502,6 +513,33 @@ OO_TRACE_DECL(SPM_MissionAdvance_AddFactionCSAT) =
 
 		OO_GET(_garrison,InfantryGarrisonCategory,Mortars) pushBack _category;
 	};
+
+	// SAM site
+
+	if ((_isReinforcedGarrison || _isBivouackedGarrison) && { random 1 < (_garrisonCountInitial * 0.005) }) then
+	{
+		assignedToDuty = _availableForDuty min 4.0;
+		_availableForDuty = _availableForDuty - _assignedToDuty;
+
+		private _area = OO_GET(_garrison,ForceCategory,Area);
+		private _center = OO_GET(_area,StrongpointArea,Position);
+		private _outerRadius = OO_GET(_area,StrongpointArea,OuterRadius);
+
+		private _position = [0,0,0];
+		while { not ([_position] call OO_METHOD(_area,StrongpointArea,PositionInArea)) || { surfaceIsWater _position } } do
+		{
+			_position = _center vectorAdd [-(_outerRadius / 2) + random _outerRadius, -(_outerRadius / 2) + random _outerRadius, 0];
+		};
+
+		// Create a 500 meter radius area in which the SAM site can be placed, giving it some room to look for a good spot
+		_area = [_position, 0, 500] call OO_CREATE(StrongpointArea);
+		private _samSite = [_area] call OO_CREATE(SAMCategory);
+		_forceSupportCategories pushBack _samSite;
+		
+		private _objective = [_samSite] call OO_CREATE(ObjectiveDestroySAM);
+		_objectives pushBack _objective;
+	};
+
 
 	// Ammo dump
 
@@ -957,7 +995,7 @@ OO_TRACE_DECL(SPM_MissionAdvance_Complete) =
 {
 	params ["_mission"];
 
-	[OO_GET(_mission,Mission,ParticipantFilter), OO_REFERENCE(_mission)] call SPM_Task_Delete;
+	[OO_GET(_mission,Mission,ParticipantFilter), ([_mission] call SPM_MissionAdvance_MissionTaskIdentifier)] call SPM_Task_Delete;
 
 	// Save some transports for the players to use
 	private _parkedVehicles = OO_GET(_mission,Strongpoint,Categories) select { OO_INSTANCE_ISOFCLASS(_x,ParkedVehiclesCategory) };
@@ -991,7 +1029,7 @@ OO_TRACE_DECL(SPM_MissionAdvance_Delete) =
 {
 	params ["_mission"];
 
-	[OO_GET(_mission,Mission,ParticipantFilter), OO_REFERENCE(_mission)] call SPM_Task_Delete;
+	[OO_GET(_mission,Mission,ParticipantFilter), [_mission] call SPM_MissionAdvance_MissionTaskIdentifier] call SPM_Task_Delete;
 
 	[] call OO_METHOD_PARENT(_mission,Root,Delete,Strongpoint);
 };

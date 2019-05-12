@@ -94,8 +94,6 @@ OO_TRACE_DECL(SPM_Mines_Update) =
 
 		private _mines = _positions apply { sleep 0.001; createMine ["ATMine", _x, [], 0] };
 
-		[_mines] call SERVER_CurateEditableObjects;
-
 		private _side = OO_GET(_category,MinesCategory,SideEast);
 		{ _side revealMine _x } forEach _mines;
 

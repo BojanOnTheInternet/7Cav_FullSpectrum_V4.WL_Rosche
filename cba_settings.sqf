@@ -118,9 +118,9 @@ force force ace_repair_displayTextOnRepair = true;
 force force ace_repair_engineerSetting_fullRepair = 2;
 force force ace_repair_engineerSetting_repair = 1;
 force force ace_repair_engineerSetting_wheel = 0;
-force force ace_repair_fullRepairLocation = 0;
-force force ace_repair_repairDamageThreshold = 0.800653;
-force force ace_repair_repairDamageThreshold_engineer = 0.904635;
+force force ace_repair_fullRepairLocation = 3;
+force force ace_repair_repairDamageThreshold = 0.6;
+force force ace_repair_repairDamageThreshold_engineer = 0.3;
 force force ace_repair_wheelRepairRequiredItems = 0;
 
 // ACE Magazine Repack

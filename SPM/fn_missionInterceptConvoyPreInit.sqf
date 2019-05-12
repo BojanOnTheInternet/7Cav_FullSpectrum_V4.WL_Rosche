@@ -729,7 +729,7 @@ OO_TRACE_DECL(SPM_MissionInterceptConvoy_Create) =
 	[_destination, 10, (_spawnpoint select 0) distance _destination, -1] call OO_METHOD_PARENT(_mission,Root,Create,Mission);
 
 	OO_SET(_mission,Strongpoint,Name,"Special Operation");
-	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeObject);
+	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeCategoryObject);
 	OO_SET(_mission,Strongpoint,GetUpdateInterval,{2});
 
 	OO_SET(_mission,Mission,ParticipantFilter,BOTH_IsSpecOpsMember);

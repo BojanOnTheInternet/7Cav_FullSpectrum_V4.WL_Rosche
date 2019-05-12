@@ -115,31 +115,37 @@ OO_TRACE_DECL(SPM_ObjectiveMarkAmmoCaches_UpdateAndGetFractionMarked) =
 
 	private _ammoCaches = OO_GET(_objective,ObjectiveMarkAmmoCaches,_AmmoCaches);
 
-	private _containers = [];
-	{
-		_containers append (_x select 1);
-	} forEach OO_GET(_ammoCaches,AmmoCachesCategory,_Caches);
+	private _remainingContainers = [];
 
-	private _numberContainers = count _containers;
-	_containers = _containers select { alive _x };
-	private _numberDestroyedContainers = _numberContainers - count _containers;
+	private _allContainers = []; { _allContainers append (_x select 1) } forEach OO_GET(_ammoCaches,AmmoCachesCategory,_Caches);
+	_remainingContainers = _allContainers;
+
+	private _destroyedContainers = _remainingContainers select { not alive _x };
+	_remainingContainers = _remainingContainers - _destroyedContainers;
 
 	private _prefix = format ["SPM_OMAC_%1_", OO_REFERENCE(_objective)];
 	private _markRadius = OO_GET(_objective,ObjectiveMarkAmmoCaches,MarkRadius);
 
-	private _numberMarkedContainers = 0;
+	private _markedContainers = [];
 	{
 		private _marker = _x;
 		private _markerPosition = getMarkerPos _marker;
 
-		private _markedContainers = _containers select { _x distance2D _markerPosition <= _markRadius };
-		if (count _markedContainers == 0) then { deleteMarker _marker };
-
-		_numberMarkedContainers = _numberMarkedContainers + count _markedContainers;
-		_containers = _containers - _markedContainers;
+		private _localContainers = _remainingContainers select { _x distance2D _markerPosition <= _markRadius };
+		if (count _localContainers == 0) then
+		{
+			deleteMarker _marker;
+		}
+		else
+		{
+			_markedContainers append _localContainers;
+			_remainingContainers = _remainingContainers - _localContainers;
+		};
 	} forEach (allMapMarkers select { _x find _prefix == 0 });
 
-	(_numberMarkedContainers + _numberDestroyedContainers) / _numberContainers
+	//TODO: Optional: call AmmoCaches.SetContainerDetectable on _markedContainers and _remainingContainers so that they start or stop beeping depending on whether they're marked
+
+	1 - (count _remainingContainers) / count _allContainers;
 };
 
 OO_TRACE_DECL(SPM_ObjectiveMarkAmmoCaches_Update) =

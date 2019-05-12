@@ -119,7 +119,11 @@ OO_TRACE_DECL(SPM_ObjectiveCaptureMan_Update) =
 			private _unitProvider = OO_GET(_objective,ObjectiveCaptureMan,UnitProvider);
 			private _unit = OO_GET(_unitProvider,UnitProvider,Unit);
 
-			if (not alive _unit) exitWith { OO_SET(_objective,MissionObjective,State,"failed") };
+			if (not alive _unit) exitWith
+			{
+				OO_SET(_objective,MissionObjective,State,"failed");
+				[_objective, ["Capture failed.  Target has been killed", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+			};
 
 			private _surrendered = (_unit getVariable "OCM_S_State") select 1;
 			if (not _surrendered) then

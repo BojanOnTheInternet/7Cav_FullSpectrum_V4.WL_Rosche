@@ -62,7 +62,7 @@ OO_TRACE_DECL(SPM_MissionRescueHostages_Create) =
 	[_missionPosition, _syndikatRadius + 100, _syndikatRadius + 200, 2] call OO_METHOD_PARENT(_mission,Root,Create,Mission);
 
 	OO_SET(_mission,Strongpoint,Name,"Special Operation");
-	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeObject);
+	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeCategoryObject);
 
 	OO_SET(_mission,Mission,ParticipantFilter,BOTH_IsSpecOpsMember);
 

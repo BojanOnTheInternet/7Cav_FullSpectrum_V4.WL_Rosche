@@ -78,7 +78,7 @@ player createDiaryRecord ["diary", ["Unit callsigns",
 <br/>
 <font face='EtelkaMonospacePro' size='10'>
 <br/>M1 Abramms                     Sabre 1/2
-<br/>Armored personnel carriers     Tincan 1/2/3/4
+<br/>Armored personnel carriers     Banshee 1/2/3/4
 </font>
 <br/>
 "

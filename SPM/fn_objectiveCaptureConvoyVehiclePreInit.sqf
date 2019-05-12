@@ -112,7 +112,16 @@ OO_TRACE_DECL(SPM_ObjectiveCaptureConvoyVehicle_Update) =
 				switch (true) do
 				{
 					case (isNull _vehicle): { OO_SET(_objective,MissionObjective,State,"error") };
-					case (not alive _vehicle || { _vehicle distance _destination < 100 }): { OO_SET(_objective,MissionObjective,State,"failed") };
+					case (not alive _vehicle):
+					{
+						OO_SET(_objective,MissionObjective,State,"failed");
+						[_objective, ["Capture failed.  Target vehicle has been destroyed", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+					};
+					case (_vehicle distance _destination < 100):
+					{
+						OO_SET(_objective,MissionObjective,State,"failed");
+						[_objective, ["Capture failed.  Target vehicle has reached its destination", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+					};
 					default
 					{
 						private _parameters = OO_GET(_objective,ObjectiveCaptureConvoyVehicle,_VehicleCaptureParameters);

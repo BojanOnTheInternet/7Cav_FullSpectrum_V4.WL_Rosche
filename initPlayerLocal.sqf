@@ -56,19 +56,19 @@ CLIENT_PlayerDisconnected =
 	} forEach CLIENT_PlayerDisconnectedHandlers;
 };
 
-inGameUISetEventHandler ["Action", "_this call CLIENT_ScrollMenuActionHandler"];
-inGameUISetEventHandler ["NextAction", "_this call CLIENT_ScrollMenuNextHandler"];
-inGameUISetEventHandler ["PrevAction", "_this call CLIENT_ScrollMenuPrevHandler"];
+inGameUISetEventHandler ["Action", "_this call CLIENT_ActionMenuActionHandler"];
+inGameUISetEventHandler ["NextAction", "_this call CLIENT_ActionMenuNextHandler"];
+inGameUISetEventHandler ["PrevAction", "_this call CLIENT_ActionMenuPrevHandler"];
 
 // Lets keep doing this every few seconds to make sure permissions are always set
 [] spawn
 {
  while { true } do
  {
-	inGameUISetEventHandler ["Action", "_this call CLIENT_ScrollMenuActionHandler"];
-	inGameUISetEventHandler ["NextAction", "_this call CLIENT_ScrollMenuNextHandler"];
-	inGameUISetEventHandler ["PrevAction", "_this call CLIENT_ScrollMenuPrevHandler"];
-	 sleep 2;
+	inGameUISetEventHandler ["Action", "_this call CLIENT_ActionMenuActionHandler"];
+	inGameUISetEventHandler ["NextAction", "_this call CLIENT_ActionMenuNextHandler"];
+	inGameUISetEventHandler ["PrevAction", "_this call CLIENT_ActionMenuPrevHandler"];
+	sleep 2;
  };
 };
 
@@ -103,6 +103,7 @@ player addEventHandler ["GetOutMan", { if ({ isPlayer _x } count crew (_this sel
 
 // Disable faction changes due to team killing, vehicle destruction, etc.
 player addEventHandler ["HandleRating", { 0 }];
+
 [] execVM "scripts\vehicle\crew\CrewList.sqf";
 [] execVM "scripts\vehicle\paradrop\Paradrop.sqf";
 
@@ -110,10 +111,11 @@ player addEventHandler ["HandleRating", { 0 }];
 [] execVM "scripts\vehiclePermissionsInit.sqf";
 
 [] call CLIENT_fnc_monitorGearInitPlayer;
+
 [] call JB_fnc_increasedFuelConsumption;
-[] call Tac2_fnc_fortifyPermissionsInitPlayer;
 [] call CLIENT_InitForceDryFire;
 [] call CLIENT_MonitorEnemyControlledAreas;
+[] call Tac2_fnc_fortifyPermissionsInitPlayer;
 
 [] execVM "scripts\misc\diary.sqf";
 

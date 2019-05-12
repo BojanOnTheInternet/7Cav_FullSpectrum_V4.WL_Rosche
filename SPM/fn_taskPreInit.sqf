@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 SPM_Task_C_Tasks = []; // [[task-name, task], ...]
 
-SPM_Task_IDtoName =
+OO_TRACE_DECL(SPM_Task_IDtoName) =
 {
 	if (count (_this select 0) == 0) exitWith { "" };
 

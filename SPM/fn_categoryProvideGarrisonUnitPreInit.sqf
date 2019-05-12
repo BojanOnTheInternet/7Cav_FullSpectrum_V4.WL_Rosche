@@ -33,9 +33,9 @@ OO_TRACE_DECL(SPM_ProvideGarrisonUnit_MemberDescription) =
 	_description = [_description] call SPM_Util_CleanedRoleDescription;
 
 	private _side = "";
-	if (_appearanceType find "LOP_US_" == 0) then { _side = "CSAT "};
-	if (_appearanceType find "LOP_PMC_" == 0) then { _side = "FIA "};
-	if (_appearanceType find "rhsgref_" == 0) then { _side = "Syndikat "};
+	if (_appearanceType find "LOP_US_" == 0) then { _side = "Novorossiya "};
+	if (_appearanceType find "LOP_PMC_" == 0) then { _side = "PMC "};
+	if (_appearanceType find "I_C_" == 0) then { _side = "Syndikat "};
 	if (_appearanceType find "LOP_IRAN" == 0) then { _side = "AAF "};
 	if (_appearanceType find "rhsusf_" == 0) then { _side = "NATO "};
 	// Don't call out 'civilian'
@@ -98,6 +98,8 @@ OO_TRACE_DECL(SPM_ProvideGarrisonUnit_Update) =
 			if (_appearanceSide == sideUnknown) then { _appearanceSide = _descriptor select 0 };
 
 			private _group = [_appearanceSide, _descriptor select 1, _unitPosition, _unitDirection, false] call SPM_fnc_spawnGroup;
+			[_garrison, _group] call OO_GET(_category,Category,InitializeObject);
+
 			private _replacement = leader _group;
 
 			[[_unit, [_unit]] call OO_CREATE(ForceUnit), [_replacement, [_replacement]] call OO_CREATE(ForceUnit)] call OO_METHOD(_garrison,ForceCategory,ReplaceUnit);

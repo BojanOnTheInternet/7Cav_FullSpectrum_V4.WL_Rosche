@@ -248,7 +248,13 @@ OO_TRACE_DECL(SPM_Mission_MessageShow) =
 
 		if ("title" in _media) then
 		{
-			titleText [_message joinString "\n", "plain down", 0.5];
+			if (typeName _message == "ARRAY") then {
+				titleText [_message joinString "\n", "plain down", 0.5];
+			}
+			else {
+				titleText [_message, "plain down", 0.5];
+			};
+			
 		};
 
 		if ("notification" in _media) then

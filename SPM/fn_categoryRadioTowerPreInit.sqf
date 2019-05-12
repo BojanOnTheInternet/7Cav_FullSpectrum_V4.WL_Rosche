@@ -63,7 +63,9 @@ OO_TRACE_DECL(SPM_RadioTowerCategory_CreateRadioTower) =
 	//TODO: Strider antenna at [0,-0.2,0.9]
 
 	private _towerType = OO_GET(_category,RadioTowerCategory,TowerType);
-	private _radioTower = [_towerType, _towerPosition, _towerDirection, "can_collide"] call SPM_fnc_spawnVehicle;
+	private _radioTower = [_towerType, _towerPosition, _towerDirection] call SPM_fnc_spawnVehicle;
+	[_category, _radioTower] call OO_GET(_category,Category,InitializeObject);
+
 	_radioTower setVectorUp [0,0,1];  // Will rotate around the origin of the object, which is usually in its middle
 
 	[_radioTower, "CRT", "TOWER"] call TRACE_SetObjectString;

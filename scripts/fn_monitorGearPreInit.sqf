@@ -340,7 +340,7 @@ GR_ATCRestriction =
 
 GR_ProhibitedItemsRestriction =
 {
-	if (isNil "GR_WhitelistItems") then { GR_WhitelistItems = call compile preprocessFile "scripts\whitelistGear.sqf" };
+	if (isNil "GR_WhitelistItems") then { GR_WhitelistItems = call CLIENT_fnc_whitelistGear };
 
 	private _whitelistWeapons = GR_WhitelistItems select 0;
 	private _whitelistBackpacks = GR_WhitelistItems select 1;

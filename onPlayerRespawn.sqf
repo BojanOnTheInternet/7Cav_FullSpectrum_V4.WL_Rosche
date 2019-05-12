@@ -38,12 +38,10 @@ if (not isNil "_cameraView" && { _cameraView in ["EXTERNAL", "INTERNAL"] }) then
 	};
 };
 
+[] call CLIENT_EC_PlayerInit;
+
 player addAction ["Clear vehicle inventory", CLIENT_ClearVehicleInventory, [], 0, false, true, "", "[] call CLIENT_ClearVehicleInventoryCondition"];
-
-private _actionID = player addAction ["Edit container inventory", { [cursorObject] call CLIENT_EditContainerInventory }, nil, 5, false, true, '', '[cursorObject] call CLIENT_EditContainerInventoryCondition', 2];
-player setVariable ["CLIENT_EditContainerInventory_Action", _actionID];
-
-player addAction ["Unflip Vehicle", { [cursorObject] call JB_fnc_flipVehicle }, [], 0, true, true, "", "(vehicle player) == player && { (player distance cursorObject) < (sizeOf typeOf cursorObject) * 0.3 } && { [cursorObject] call JB_fnc_flipVehicleCondition }"];
+player addAction ["Unflip Vehicle", { [cursorObject] call JB_fnc_flipVehicle }, [], 0, true, true, "", "vehicle player == player && { getCursorObjectParams select 2 <= 2 } && { [cursorObject] call JB_fnc_flipVehicleCondition }"];
 
 ["respawn"] call compile preProcessFile format ["scripts\class\%1.sqf", typeOf player];
 

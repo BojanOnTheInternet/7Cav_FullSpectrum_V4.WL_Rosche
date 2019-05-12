@@ -126,7 +126,11 @@ OO_TRACE_DECL(SPM_ObjectiveRescueMan_Update) =
 			private _unitProvider = OO_GET(_objective,ObjectiveRescueMan,UnitProvider);
 			private _unit = OO_GET(_unitProvider,UnitProvider,Unit);
 
-			if (not alive _unit) exitWith { OO_SET(_objective,MissionObjective,State,"failed") };
+			if (not alive _unit) exitWith
+			{
+				OO_SET(_objective,MissionObjective,State,"failed");
+				[_objective, ["Rescue failed.  Target has been killed.", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+			};
 		};
 
 		case "succeeded";

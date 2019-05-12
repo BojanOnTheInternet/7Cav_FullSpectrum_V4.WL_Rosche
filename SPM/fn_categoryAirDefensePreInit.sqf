@@ -103,7 +103,7 @@ OO_TRACE_DECL(SPM_AirDefense_CreateUnit) =
 	if (_index == -1) exitWith {};
 	private _vehicleDescriptor = OO_GET(_category,ForceCategory,CallupsEast) select _index select 1;
 
-	private _unitVehicle = [_type, _position, _direction] call SPM_fnc_spawnVehicle;
+	private _unitVehicle = [_type, _position, _direction, ""] call SPM_fnc_spawnVehicle;
 	_unitVehicle setVehicleTIPars [1.0, 0.5, 0.0]; // Start vehicle hot so it shows on thermals
 
 	private _crew = [_unitVehicle] call SPM_fnc_groupFromVehicleCrew;

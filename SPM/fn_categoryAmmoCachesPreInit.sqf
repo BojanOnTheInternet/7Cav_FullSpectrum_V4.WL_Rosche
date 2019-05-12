@@ -152,18 +152,13 @@ OO_TRACE_DECL(SPM_AmmoCaches_CreateContainers) =
 				};
 				_containerDirection = _containerDirection + (90 * floor random 4);
 
-				private _container = [_containerType, _containerPosition vectorAdd [-_shift + random (_shift * 2), -_shift + random (_shift * 2), 2.0], _containerDirection, "can_collide"] call SPM_fnc_spawnVehicle;
+				private _container = [_containerType, _containerPosition vectorAdd [-_shift + random (_shift * 2), -_shift + random (_shift * 2), 2.0], _containerDirection] call SPM_fnc_spawnVehicle;
 				[_container] call JB_fnc_containerClear;
 				[_container] call JB_fnc_containerLock;
 				[_container, _containerDamage, _containerHasMissiles] call JB_fnc_detonateSetDamage;
 				_container allowDamage false;
 
-				if (OO_GET(_category,AmmoCachesCategory,ContainersDetectable)) then
-				{
-					private _charge = "DemoCharge_Remote_Ammo" createVehicle (call SPM_Util_RandomSpawnPosition);
-					_charge attachTo [_container, [0,0,-0.2]];
-					_charge allowDamage false;
-				};
+				if (OO_GET(_category,AmmoCachesCategory,ContainersDetectable)) then { [_container, true] call OO_METHOD(_category,AmmoCachesCategory,SetContainerDetectable) };
 
 				[_category, _container] call OO_GET(_category,Category,InitializeObject);
 				[_container, 0.5, 1.0] call JB_fnc_damagePulseInitObject;
@@ -227,12 +222,32 @@ OO_TRACE_DECL(SPM_AmmoCaches_Delete) =
 	OO_SET(_category,AmmoCachesCategory,_Caches,[]);
 };
 
+OO_TRACE_DECL(SPM_AmmoCaches_SetContainerDetectable) =
+{
+	params ["_category", "_container", "_detectable"];
+
+	if (not _detectable) then
+	{
+		{ deleteVehicle _x } forEach (attachedObjects _container);
+	}
+	else
+	{
+		if (count attachedObjects _container == 0) then
+		{
+			private _charge = "DemoCharge_Remote_Ammo" createVehicle (call SPM_Util_RandomSpawnPosition);
+			_charge attachTo [_container, [0,0,-0.2]];
+			_charge allowDamage false;
+		};
+	};
+};
+
 private _defaultContainersPerCache = [1,4];
 
 OO_BEGIN_SUBCLASS(AmmoCachesCategory,Category);
 	OO_OVERRIDE_METHOD(AmmoCachesCategory,Root,Create,SPM_AmmoCaches_Create);
 	OO_OVERRIDE_METHOD(AmmoCachesCategory,Root,Delete,SPM_AmmoCaches_Delete);
 	OO_OVERRIDE_METHOD(AmmoCachesCategory,Category,Update,SPM_AmmoCaches_Update);
+	OO_DEFINE_METHOD(AmmoCachesCategory,SetContainerDetectable,SPM_AmmoCaches_SetContainerDetectable);
 	OO_DEFINE_PROPERTY(AmmoCachesCategory,ContainersDetectable,"BOOL",true);
 	OO_DEFINE_PROPERTY(AmmoCachesCategory,_Garrison,"#OBJ",OO_NULL); // The garrison used to pick cache locations
 	OO_DEFINE_PROPERTY(AmmoCachesCategory,_NumberCaches,"SCALAR",4);

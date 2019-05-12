@@ -138,22 +138,22 @@ OO_TRACE_DECL(SPM_AirPatrol_Retire) =
 	params ["_forceUnitIndex", "_category"];
 
 	private _forceUnit = OO_GET(_category,ForceCategory,ForceUnits) select _forceUnitIndex;
-	private _vehicle = OO_GET(_forceUnit,ForceUnit,Vehicle);
 
 	// If already retiring, return
-	if ((group driver _vehicle) getVariable ["SPM_Force_Retiring", false]) exitWith {};
+	if ([_forceUnit] call SPM_Force_IsRetiring) exitWith {};
 
+	private _vehicle = OO_GET(_forceUnit,ForceUnit,Vehicle);
 	private _position = _vehicle getVariable "SPM_AirPatrol_RetirePosition";
+	private _group = [] call OO_METHOD(_forceUnit,ForceUnit,GetGroup);
 
-	{
-		[_x] call SPM_DeletePatrolWaypoints;
+	[_group] call SPM_DeletePatrolWaypoints;
 
-		[units _x] call SPM_Util_AIOnlyMove;
+	[units _group] call SPM_Util_AIOnlyMove;
 
-		private _waypoint = [_x, _position] call SPM_AddPatrolWaypoint;
-		[_waypoint, SPM_WS_SalvageAirPatrol, _category] call SPM_AddPatrolWaypointStatements;
-		_x setVariable ["SPM_Force_Retiring", true];
-	} forEach ([] call OO_METHOD(_forceUnit,ForceUnit,GetGroups));
+	private _waypoint = [_group, _position] call SPM_AddPatrolWaypoint;
+	[_waypoint, SPM_WS_SalvageAirPatrol, _category] call SPM_AddPatrolWaypointStatements;
+
+	[_forceUnit, true] call SPM_Force_SetRetiring;
 };
 
 OO_TRACE_DECL(SPM_AirPatrol_Reinstate) =
@@ -161,15 +161,14 @@ OO_TRACE_DECL(SPM_AirPatrol_Reinstate) =
 	params ["_forceUnitIndex", "_category"];
 
 	private _forceUnit = OO_GET(_category,ForceCategory,ForceUnits) select _forceUnitIndex;
+	private _group = [] call OO_METHOD(_forceUnit,ForceUnit,GetGroup);
 
-	{
-		[_x] call SPM_DeletePatrolWaypoints;
+	[_group] call SPM_DeletePatrolWaypoints;
 
-		[units _x] call SPM_Util_AIFullCapability;
+	[units _group] call SPM_Util_AIFullCapability;
 
-		_x setVariable ["SPM_Force_Retiring", nil];
-		[_category, _x] call SPM_AirPatrol_Task_Patrol;
-	} forEach ([] call OO_METHOD(_forceUnit,ForceUnit,GetGroups));
+	[_forceUnit, false] call SPM_Force_SetRetiring;
+	[_category, _group] call SPM_AirPatrol_Task_Patrol;
 };
 
 OO_TRACE_DECL(SPM_AirPatrol_WS_TargetDestroyed) =

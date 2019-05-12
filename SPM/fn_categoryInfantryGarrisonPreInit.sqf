@@ -112,11 +112,15 @@ OO_TRACE_DECL(SPM_InfantryGarrison_AllocateMissionBuilding) =
 		};
 	} forEach _availableBuildings;
 
+	// Restrict the buildings to preferred types
+	private _preferences = OO_GET(_category,InfantryGarrisonCategory,HousingPreferences);
+	if (count _preferences > 0) then { _buildings = _buildings select { getText (configFile >> "CfgVehicles" >> typeOf (_x select 1) >> "vehicleClass") in _preferences } };
+
 	if (count _buildings == 0) exitWith { objNull };
 
 	// Depending on how the housing is selected, either pick completely randomly or be more selective
-	private _housingPreference = OO_GET(_category,InfantryGarrisonCategory,HousingPreference);
-	if (_housingPreference == -1) then
+	private _housingDistribution = OO_GET(_category,InfantryGarrisonCategory,HousingDistribution);
+	if (_housingDistribution == -1) then
 	{
 		_building = selectRandom _buildings;
 		_building = _availableBuildings deleteAt (_building select 0);
@@ -125,7 +129,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_AllocateMissionBuilding) =
 	{
 		_buildings = _buildings apply { [(_x select 1) distanceSqr _position, _x select 0] }; // [[distance, index], ...]
 		_buildings sort true;
-		private _index = floor random [0, (count _buildings) * _housingPreference, count _buildings];
+		private _index = floor random [0, (count _buildings) * _housingDistribution, count _buildings];
 		_building = _availableBuildings deleteAt (_buildings select _index select 1);
 	};
 	
@@ -155,8 +159,8 @@ OO_TRACE_DECL(SPM_InfantryGarrison_AllocateCampsite) =
 	if (count _campsites == 0) exitWith { objNull };
 
 	// Depending on how the housing is selected, either pick completely randomly or be more selective
-	private _housingPreference = OO_GET(_category,InfantryGarrisonCategory,HousingPreference);
-	if (_housingPreference == -1) then
+	private _housingDistribution = OO_GET(_category,InfantryGarrisonCategory,HousingDistribution);
+	if (_housingDistribution == -1) then
 	{
 		_campsite = selectRandom _campsites;
 		_campsite = _availableCampsites deleteAt (_campsite select 0);
@@ -165,7 +169,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_AllocateCampsite) =
 	{
 		_campsites = _campsites apply { [(_x select 1) distanceSqr _position, _x select 0] }; // [[distance, index], ...]
 		_campsites sort true;
-		private _index = floor random [0, (count _campsites) * _housingPreference, count _campsites];
+		private _index = floor random [0, (count _campsites) * _housingDistribution, count _campsites];
 		_campsite = _availableCampsites deleteAt (_campsites select _index select 1);
 	};
 
@@ -178,9 +182,9 @@ OO_TRACE_DECL(SPM_InfantryGarrison_AllocateCampsite) =
 		_positions set [_i, _position];
 	};
 
-	_campsite = ["Land_Campfire_F", _campsite, random 360, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle;
+	_campsite = ["Land_Campfire_F", _campsite, random 360] call SPM_fnc_spawnVehicle;
 	_campsite hideObjectGlobal true; // SPM_Occupy will make it visible when the first unit arrives
-	if (call SERVER_IsNightOperation) then { _campsite inflame true };
+
 	[_campsite, _positions] call SPM_Occupy_SetBuildingData;
 	OO_GET(_category,InfantryGarrisonCategory,Campfires) pushBack _campsite;
 
@@ -266,7 +270,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_PlanOccupation) =
 
 		private _initialReserves = _reserves;
 
-		private _missionBuildings = OO_GET(_mission,Mission,Buildings);
+		private _missionBuildings = [] call OO_METHOD(_mission,Mission,GetBuildings);
 		private _results = [_category, _callups, _reserves, SPM_InfantryGarrison_AllocateMissionBuilding, _missionBuildings] call SPM_InfantryGarrison_AllocateHousing;
 		OO_SET(_category,InfantryGarrisonCategory,GarrisonBuildings,_results select 0);
 		_reserves = _results select 1;
@@ -276,12 +280,14 @@ OO_TRACE_DECL(SPM_InfantryGarrison_PlanOccupation) =
 
 		if (OO_GET(_category,InfantryGarrisonCategory,HouseOutdoors)) then
 		{
-			private _primaryCampsites = OO_GET(_mission,Mission,PrimaryCampsites);
+			private _campsites = [] call OO_METHOD(_mission,Mission,GetCampsites);
+
+			private _primaryCampsites = _campsites select 0;
 			private _results = [_category, _callups, _reserves, SPM_InfantryGarrison_AllocateCampsite, _primaryCampsites] call SPM_InfantryGarrison_AllocateHousing;
 			OO_GET(_category,InfantryGarrisonCategory,GarrisonBuildings) append (_results select 0);
 			_reserves = _results select 1;
 
-			private _secondaryCampsites = OO_GET(_mission,Mission,SecondaryCampsites);
+			private _secondaryCampsites = _campsites select 1;
 			private _results = [_category, _callups, _reserves, SPM_InfantryGarrison_AllocateCampsite, _secondaryCampsites] call SPM_InfantryGarrison_AllocateHousing;
 			OO_GET(_category,InfantryGarrisonCategory,GarrisonBuildings) append (_results select 0);
 			_reserves = _results select 1;
@@ -310,6 +316,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_AllocateGarrisonBuilding) =
 		if (damage _building == 1) then { _garrisonBuildings deleteAt _i };
 	};
 
+	// Figure out which buildings we should choose from.  They must have room for all the soldiers.
 	private _buildings = [];
 	private _understrengthBuildings = [];
 	private _counts = [];
@@ -323,6 +330,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_AllocateGarrisonBuilding) =
 		};
 	} forEach _garrisonBuildings;
 
+	// Load them into buildings with other soldiers before picking new, empty ones
 	if (count _understrengthBuildings > 0) then { _buildings = _understrengthBuildings };
 
 	if (count _buildings == 0) exitWith { objNull };
@@ -407,6 +415,8 @@ OO_TRACE_DECL(SPM_InfantryGarrison_OnUncommandedExit) =
 OO_TRACE_DECL(SPM_InfantryGarrison_GarrisonGroup) =
 {
 	params ["_category", "_group", "_priority", "_buildingProximity"];
+
+	if (count units _group == 0) exitWith {};
 
 	OO_GET(_category,InfantryGarrisonCategory,HousedUnits) append units _group;
 
@@ -508,16 +518,15 @@ OO_TRACE_DECL(SPM_InfantryGarrison_CreateInitialForce) =
 {
 	params ["_category"];
 
-	private _occupationLimits = OO_GET(_category,InfantryGarrisonCategory,OccupationLimits);
-	private _initialReserves = OO_GET(_category,InfantryGarrisonCategory,InitialReserves) min OO_GET(_category,ForceCategory,Reserves);
 	private _difficulty = OO_GET(_category,ForceCategory,DifficultyLevel);
-	_initialReserves = _initialReserves * _difficulty;
-
+	private _initialReserves = OO_GET(_category,InfantryGarrisonCategory,InitialReserves) * _difficulty;
 	_initialReserves = _initialReserves min OO_GET(_category,ForceCategory,Reserves);
 
 	if (_initialReserves > 0) then
 	{
+		private _occupationLimits = OO_GET(_category,InfantryGarrisonCategory,OccupationLimits);
 		private _side = OO_GET(_category,ForceCategory,SideEast);
+
 		private _callups = OO_GET(_category,InfantryGarrisonCategory,InitialCallupsEast) apply { [_x select 1 select 1, _x ] }; // [number-soldiers, callup-structure]
 		_callups = _callups select { _x select 0 <= (_occupationLimits select 1) };
 		_callups sort false;
@@ -528,8 +537,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_CreateInitialForce) =
 
 		private _consumedReserves = 0;
 		private _units = [];
-		private _occupying = true;
-		while { _occupying } do
+		while { true } do
 		{
 			while { count _callups > 0 && { _initialReserves < _callups select 0 select 0 } } do { _callups deleteAt 0; _weights deleteAt 0 };
 
@@ -550,9 +558,11 @@ OO_TRACE_DECL(SPM_InfantryGarrison_CreateInitialForce) =
 			}
 			else
 			{
-				_occupying = false;
 				{ deleteVehicle _x } forEach +(units _group);
 				deleteGroup _group;
+
+				// The group is too large to fit into any available building space, so remove the callup
+				_callups deleteAt 0; _weights deleteAt 0;
 			};
 		};
 
@@ -1026,7 +1036,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_Balance) =
 			private _airSpawnpoint = [[],0];
 			if (count OO_GET(_transport,TransportCategory,AirTransports) > 0 && OO_GET(_category,InfantryGarrisonCategory,TransportByAir) > 0) then
 			{
-				_airSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), 500, 100, _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetAirSpawnpoint;
+				_airSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), 2000, 100, _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetAirSpawnpoint;
 			};
 
 			private _weights = [0.0, 0.0, 0.0];
@@ -1171,6 +1181,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_LeaveBuilding) =
 	if (count _soldiers == 0) exitWith { grpNull };
 
 	private _group = createGroup side (_soldiers select 0);
+
 	_group setBehaviour (behaviour (_soldiers select 0));
 	_group setCombatMode (combatMode (_soldiers select 0));
 	_group setSpeedMode (speedMode (_soldiers select 0));
@@ -1238,16 +1249,8 @@ OO_TRACE_DECL(SPM_InfantryGarrison_BeginTemporaryDuty) =
 	if (_number == -1) then { _number = count _housedUnits };
 	if (count _housedUnits < _number) exitWith { grpNull };
 
-	private _occupyingUnits = [];
-	private _outdoorUnits = [];
-	{
-		if ([_x] call SPM_Occupy_IsOccupyingUnit) then { _occupyingUnits pushBack _x } else { _outdoorUnits pushBack _x };
-	} forEach _housedUnits;
-
-	// Make sure we send units not in buildings off to temporary duty first
-	private _dutyUnits = (_outdoorUnits + _occupyingUnits) select [0, _number];
-
-	_housedUnits = _housedUnits - _dutyUnits;	
+	private _dutyUnits = _housedUnits select [0, _number];
+	_housedUnits = _housedUnits - _dutyUnits;
 	OO_SET(_category,InfantryGarrisonCategory,HousedUnits,_housedUnits);
 
 #ifdef OO_TRACE
@@ -1302,8 +1305,6 @@ OO_TRACE_DECL(SPM_InfantryGarrison_Relocate) =
 
 	// Remove dead units from housed list
 	private _housedUnits = OO_GET(_category,InfantryGarrisonCategory,HousedUnits);
-	_housedUnits = _housedUnits select { alive _x };
-	OO_SET(_category,InfantryGarrisonCategory,HousedUnits,_housedUnits);
 
 	// Find out the odds of a given unit relocating
 	private _relocateProbability = OO_GET(_category,InfantryGarrisonCategory,RelocateProbability);
@@ -1401,7 +1402,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_CallMortars) =
 				private _targetPosition = _x select 1;
 
 				// Introduce spotting/reporting inaccuracy of 10% (a target 300 meters away will be mistargeted by up to 30 meters)
-				private _wobble = (_targetPosition distance (_x select 4)) * 0.5;
+				private _wobble = ((_targetPosition distance (_x select 4)) * 0.5) + 80;
 				_targetPosition = _targetPosition vectorAdd [-_wobble / 2 + random _wobble, -_wobble / 2 + random _wobble, 0];
 
 				private _fireMission = [_targetPosition, [[0, "8Rnd_82mm_Mo_shells"]]] call OO_CREATE(MortarFireMission);
@@ -1415,6 +1416,51 @@ OO_TRACE_DECL(SPM_InfantryGarrison_CallMortars) =
 			} forEach (_westClusters select { _x select 0 >= 3 }); // Must be at least 3 enemies in the cluster
 		};
 	};
+};
+
+// Fleeing units that are garrisoned cannot move, so they never stop fleeing.  Let them run and, hopefully,
+// eventually stop fleeing.
+OO_TRACE_DECL(SPM_InfantryGarrison_AllowFleeingToRun) =
+{
+	params ["_category"];
+
+	private _housedUnits = OO_GET(_category,InfantryGarrisonCategory,HousedUnits);
+
+	private _departingUnits = [];
+	private _building = objNull;
+	private _units = [];
+	{
+		if (fleeing _x && { [_x] call SPM_Occupy_IsOccupyingUnit }) then
+		{
+			_units = ([[_x] call SPM_Occupy_OccupierBuilding, side _x] call SPM_Occupy_GetOccupiers) select { fleeing (_x select 0) };
+			_units = _units select { _x in _housedUnits };
+			[_category, _units] call SPM_InfantryGarrison_LeaveBuilding;
+			_departingUnits append _units;
+		};
+	} forEach _housedUnits;
+
+	if (count _departingUnits > 0) then
+	{
+		_housedUnits = _housedUnits - _departingUnits;
+		OO_SET(_category,InfantryGarrisonCategory,HousedUnits,_housedUnits);
+	};
+
+	//TODO: Temporary duty soldiers need to be able to run away
+};
+
+// Groups whose leaders aren't fleeing and that have no active waypoints are told to get in garrison
+OO_TRACE_DECL(SPM_InfantryGarrison_GarrisonWanderingGroups) =
+{
+	params ["_category"];
+
+	private _groups = [];
+	{
+		_groups pushBackUnique (group OO_GET(_x,ForceUnit,Vehicle));
+	} forEach (OO_GET(_category,ForceCategory,ForceUnits) select { not ([OO_GET(_x,ForceUnit,Vehicle)] call SPM_Occupy_IsOccupyingUnit) });
+
+	{
+		[_category, _x, true, 0.0] call SPM_InfantryGarrison_GarrisonGroup;
+	} forEach (_groups select { not fleeing leader _x && { currentWaypoint _x == count waypoints _x } });
 };
 
 OO_TRACE_DECL(SPM_InfantryGarrison_Update) =
@@ -1447,11 +1493,22 @@ OO_TRACE_DECL(SPM_InfantryGarrison_Update) =
 	// Remove units that have wandered onto a base
 	if (OO_GET(_category,InfantryGarrisonCategory,_DeleteStrays)) then { [_forceUnits, 0, OO_GET(_category,ForceCategory,SideWest)] call SPM_Force_DeleteEnemiesOnBases };
 
+	// Remove dead units from housed list
+	private _housedUnits = OO_GET(_category,InfantryGarrisonCategory,HousedUnits);
+	_housedUnits = _housedUnits select { alive _x };
+	OO_SET(_category,InfantryGarrisonCategory,HousedUnits,_housedUnits);
+
 	// Call in support assets on enemies
 	[_category] call SPM_InfantryGarrison_CallMortars;
 
-	// At interals, have infantry wander around between different buildings
+	// Have infantry wander around between different buildings
 	[_category] call SPM_InfantryGarrison_Relocate;
+
+	// Allow fleeing units to leave buildings
+	[_category] call SPM_InfantryGarrison_AllowFleeingToRun;
+
+	// When they stop fleeing, bring them back
+	[_category] call SPM_InfantryGarrison_GarrisonWanderingGroups;
 
 	// Balance the garrison
 	private _balanceTime = OO_GET(_category,InfantryGarrisonCategory,_BalanceTime);
@@ -1496,8 +1553,7 @@ OO_TRACE_DECL(SPM_InfantryGarrison_Delete) =
 //	_buildings = _buildings select { getText (configFile >> "CfgVehicles" >> typeOf _x >> "vehicleClass") in ["Structures_Village", "Structures_Town"] };
 
 
-private _transportOperationsNull = [OO_NULL,OO_NULL,OO_NULL];
-private _defaultOccupationLimits = [1,4];
+private _defaultOccupationLimits = [1,1e3];
 
 OO_BEGIN_SUBCLASS(InfantryGarrisonCategory,ForceCategory);
 	OO_OVERRIDE_METHOD(InfantryGarrisonCategory,Root,Create,SPM_InfantryGarrison_Create);
@@ -1516,7 +1572,6 @@ OO_BEGIN_SUBCLASS(InfantryGarrisonCategory,ForceCategory);
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,ActivityBorder,"BOOL",0); // A buffer distance at which the infantry arrives, is discounted if it departs, etc.
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,OccupationLimits,"ARRAY",_defaultOccupationLimits); // Per building, the minimum and maximum number of troops to house
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,RelocateProbability,"SCALAR",0.0003); // Per second, the odds that a garrison soldier will relocate (CODE also allowed)
-	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,HouseOutdoors,"BOOL",true);
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,ExitBuildingParameters,"ARRAY",SPM_InfantryGarrison_DefaultEBP); // [coalesce-distance, units-per-group, building-search-radius, building-minimum-positions, building-enter-probability]
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,Transport,"#OBJ",OO_NULL);
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,TransportBySea,"SCALAR",0.8); // The defaults produce 0.8 probability of sea, 0.2*0.5=0.1 probability of ground and 0.2*0.5*1.0=0.1 probability of air, assuming that all three types of transport are available and practical
@@ -1531,7 +1586,9 @@ OO_BEGIN_SUBCLASS(InfantryGarrisonCategory,ForceCategory);
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,Campfires,"ARRAY",[]);
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,UrbanThreshhold,"SCALAR",0.6); // Fraction of units that must be housed if the operation is to be considered urban
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,IsUrbanEnvironment,"BOOL",false); // Whether the garrison is occupying an urban environment
-	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,HousingPreference,"SCALAR",0.2); // 0.0 - 1.0. The larger the number, the greater preference for buildings in the outermost part of the garrison area.  A -1.0 value gives uniform distribution.
+	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,HouseOutdoors,"BOOL",true);
+	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,HousingPreferences,"ARRAY",[]); // A list of building "vehicleClass".  If empty, then any building is acceptable.
+	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,HousingDistribution,"SCALAR",0.2); // 0.0 - 1.0. The larger the number, the greater preference for buildings in the outermost part of the garrison area.  A -1.0 value gives uniform distribution.
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,HousedUnits,"ARRAY",[]);
 	OO_DEFINE_PROPERTY(InfantryGarrisonCategory,_DeleteStrays,"BOOL",false);
 OO_END_SUBCLASS(InfantryGarrisonCategory);

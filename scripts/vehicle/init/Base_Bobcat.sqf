@@ -4,7 +4,7 @@
 		[_this select 0, -1] call ace_cargo_fnc_setSize;
 		[_this select 0, 6000] call ace_refuel_fnc_setFuel;
 		[_this select 0, 1200] call ace_rearm_fnc_setSupplyCount;
-
+		(_this select 0) setVariable ["ACE_isRepairVehicle", true, true];
 		{ (_this select 0) removeWeapon _x } forEach weapons (_this select 0);
 		(_this select 0) animate ["HideTurret", 1];
 

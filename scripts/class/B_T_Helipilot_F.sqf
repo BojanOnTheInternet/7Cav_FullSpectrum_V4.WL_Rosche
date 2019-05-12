@@ -8,7 +8,7 @@ if (_state == "init") then
 	[] call HUD_Pilot_Initialize;
 
 	player setVariable ["SPM_BranchOfService", "air"];
-
+	player setvariable ["ACE_IsEngineer", 2];
 	[player] call CLIENT_SetInfantryVehiclePermissions;
 	{
 		player setVariable [_x, [[TypeFilter_AttackRotory, [], {}]] + (player getVariable _x)];

@@ -161,7 +161,11 @@ OO_TRACE_DECL(SPM_ObjectiveInteractObject_Update) =
 		{
 			private _object = OO_GET(_objective,MissionObjective,ObjectiveObject);
 			if (isNull _object) exitWith { OO_SET(_objective,MissionObjective,State,"error") };
-			if (not alive _object) exitWith { OO_SET(_objective,MissionObjective,State,"failed") };
+			if (not alive _object) exitWith
+			{
+				OO_SET(_objective,MissionObjective,State,"failed");
+				[_objective, ["Interaction failed.  Target has been destroyed", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+			};
 		};
 
 		case "succeeded";

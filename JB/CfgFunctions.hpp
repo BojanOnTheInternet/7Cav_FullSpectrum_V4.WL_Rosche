@@ -36,6 +36,8 @@ class JB
 		class concussPreInit { preInit = 1; };
 		class containerClear {};
 		class containerClone {};
+		class containerEditPreInit { preInit = 1; };
+		class containerEdit {};
 		class containerProviderInitializeSource {};
 		class containerProviderPreInit { preInit = 1; };
 		class containerInitPlayer {};
@@ -117,6 +119,7 @@ class JB
 		class objectVolume {};
 		class passesTypeFilter {};
 		class paradropSlungCargo {};
+		class placeObjectCreateType {};
 		class placeObjectInitializePlayer {};
 		class placeObjectInitializeSource {};
 		class placeObjectPreInit { preInit = 1; };
@@ -156,6 +159,7 @@ class JB
 		class trimWhitespace {};
 		class weaponControlPreInit { preInit = 1; };
 		class weaponControlEnableWeapon {};
+		class weaponControlGetWeapons {};
 		class weaponControlInitializeVehicle {};
 		class unitWhiteListBlackList {};
 		class unitClusters {};

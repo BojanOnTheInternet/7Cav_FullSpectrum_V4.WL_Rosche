@@ -1,3 +1,5 @@
+MASS_TO_KG = 0.04545;
+
 AmmoFilter_TransferToTrolley =
 {
 	params ["_unit", "_candidate"];
@@ -52,6 +54,6 @@ TaruPod_AnimateDoors =
 BOTH_IsSpecOpsMember =
 {
 	params ["_player"];
-
-	(_player getVariable ["SPM_BranchOfService", ""]) == "special-forces"
+	
+	_player getVariable ["SPM_SpecialOperations", false];
 };

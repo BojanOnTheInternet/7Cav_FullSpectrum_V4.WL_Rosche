@@ -2,7 +2,7 @@ author = "Vex.W, Dakota.N, JB & Bojan";
 overviewPicture = "media\images\loading.jpg";
 
 loadScreen = "media\images\loading.jpg";
-onLoadName = "7Cav Full Spectrum v4.2.6.2";
+onLoadName = "7Cav Full Spectrum v4.2.7";
 onLoadMission = "Welcome to 7th Cavalry Tactical Realism! Join us on TeamSpeak at ts3.7cav.us Password: 7thCavalry";
 
 briefing = 0;
@@ -32,7 +32,7 @@ enableDebugConsole[] =
 
 	class Extended_PreInit_EventHandlers {
         cScripts_preInit = "0 spawn compile preprocessFileLineNumbers 'cScripts\CavFnc\cScripts_preInit.sqf'";
-		tac2_customModules = call compile preprocessFileLineNumbers "Tac2\tac2_preInit.sqf";
+	tac2_customModules = call compile preprocessFileLineNumbers "Tac2\tac2_preInit.sqf";
         settings = call compile preprocessFileLineNumbers "simple_splint\functions\fn_initsettings.sqf";
     };
     class Extended_PostInit_EventHandlers {
@@ -54,12 +54,9 @@ RespawnDialog = 0;
 wreckManagerMode = 0;
 corpseManagerMode = 0;
 
-//#include "VAS\menu.hpp"
 #include "scripts\common.hpp"				  		// Common dialog classes
 #include "JB\defines.hpp"
-//#include "JB\dialog_ammoInit.hpp"
-//#include "JB\dialog_repairInit.hpp"
-//#include "JB\dialog_repackInit.hpp"
+#include "JB\dialog_containerEdit.hpp"
 #include "OP\dialog_command.hpp"
 #include "OP\dialog_inspector.hpp"
 
@@ -79,10 +76,11 @@ class CfgFunctions
 	#include "simple_splint\CfgFunctions.hpp"		// Simple Splint
 	#include "Tac2\CfgFunctions.hpp"
 };
-	#include "cScripts\Loadouts\script\CfgPoppy.hpp"
-    #include "cScripts\ViewingDistance\GUI.h"
-    #include "cScripts\CfgUnitInsignia.hpp"
-    #include "cScripts\CfgLoadouts.hpp"
+
+#include "cScripts\Loadouts\script\CfgPoppy.hpp"
+#include "cScripts\ViewingDistance\GUI.h"
+#include "cScripts\CfgUnitInsignia.hpp"
+#include "cScripts\CfgLoadouts.hpp"
 
 class CfgSounds
 {
@@ -157,7 +155,6 @@ class RscTitles
 {
 	#include "scripts\vehicle\crew\CrewList.hpp"	// Occupants HUD for vehicles
 	#include "scripts\vehicle\paradrop\Paradrop.hpp"// Indicators for HALO and static lines
-	//#include "JB\display_medicalInit.hpp"			// Medic monitor when incapacitated
 	#include "Diagnostics\dialog_stripChart.hpp"
 };
 
@@ -179,7 +176,7 @@ class Params
 		title = "Special operations";
 		texts[] = {"Started","Stopped"};
 		values[] = {1,0};
-		default = 0;
+		default = 1;
 		mutable = 1;
 	};
 

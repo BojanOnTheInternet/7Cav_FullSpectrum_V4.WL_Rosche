@@ -53,7 +53,7 @@ OO_TRACE_DECL(SPM_ObjectiveInteractObjectSimple_Update) =
 				if (count _position > 0) then
 				{
 					private _objectType = OO_GET(_objective,ObjectiveInteractObjectSimple,ObjectType);
-					private _object = ([_objectType, _position, random 360, "can_collide"] call SPM_fnc_spawnVehicle);
+					private _object = ([_objectType, _position, random 360] call SPM_fnc_spawnVehicle);
 					[_objective, _object] call OO_GET(_objective,Category,InitializeObject);
 
 					private _onObjectCreate = OO_GET(_objective,ObjectiveInteractObjectSimple,OnObjectCreate);

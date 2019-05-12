@@ -49,7 +49,11 @@ OO_TRACE_DECL(SPM_ObjectiveDeliverMan_Update) =
 			private _unitProvider = OO_GET(_objective,ObjectiveDeliverMan,UnitProvider);
 			private _unit = OO_GET(_unitProvider,UnitProvider,Unit);
 
-			if (not alive _unit) exitWith { OO_SET(_objective,MissionObjective,State,"failed") };
+			if (not alive _unit) exitWith
+			{
+				OO_SET(_objective,MissionObjective,State,"failed");
+				[_objective, ["Delivery failed.  Target has been killed", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+			};
 
 			if (vehicle _unit == _unit) then
 			{
@@ -73,7 +77,9 @@ OO_TRACE_DECL(SPM_ObjectiveDeliverMan_Update) =
 
 				if (_isDelivered) then
 				{
-					[_unit] join createGroup [civilian, true];
+					private _group = createGroup [civilian, true];
+					[_unit] join _group;
+
 					doStop _unit;
 
 					OO_SET(_objective,MissionObjective,State,"succeeded");

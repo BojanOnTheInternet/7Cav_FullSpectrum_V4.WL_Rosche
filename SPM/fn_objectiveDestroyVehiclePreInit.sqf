@@ -88,7 +88,7 @@ OO_TRACE_DECL(SPM_ObjectiveDestroyVehicle_CreateVehicle) =
 		{ _x hideObjectGlobal true } forEach _blockingObjects;
 	};
 
-	private _vehicle = [_vehicleType, _parkingPosition select 0, _parkingPosition select 1, "can_collide"] call SPM_fnc_spawnVehicle;
+	private _vehicle = [_vehicleType, _parkingPosition select 0, _parkingPosition select 1] call SPM_fnc_spawnVehicle;
 
 	([_vehicle] + (_vehicleInitializer select 1)) call (_vehicleInitializer select 0);
 	[_objective, _vehicle] call OO_GET(_category,Category,InitializeObject);

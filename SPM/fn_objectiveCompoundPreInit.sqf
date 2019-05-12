@@ -178,7 +178,7 @@ OO_TRACE_DECL(SPM_ObjectiveCompoundAny_ObjectiveHasSucceeded) =
 {
 	params ["_compound"];
 
-	private _objectives = OO_GET(_mission,Mission,Objectives) select { OO_GET(_x,MissionObjective,State) in OO_GET(_x,MissionObjective,CompletionStates) };
+	private _objectives = OO_GET(_compound,ObjectiveCompound,Objectives) select { OO_GET(_x,MissionObjective,State) in OO_GET(_x,MissionObjective,CompletionStates) };
 
 	count _objectives >= OO_GET(_compound,ObjectiveCompoundAny,MinimumRequiredCompleted)
 };

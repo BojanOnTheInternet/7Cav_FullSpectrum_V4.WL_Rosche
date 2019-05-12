@@ -437,18 +437,8 @@ BobcatService_SetupClient =
 	if (not hasInterface) exitWith {};
 
 	_vehicle addAction ["<t color='#FFFF99'>Repair/refuel aircraft</t>", { [vehicle (_this select 1), [["repair", 60, 0.0], ["refuel", 60, 1.0]]] call JB_fnc_serviceVehicle }, nil, 15, false, true, "", '((vehicle _this) isKindOf "Air") && { not ((vehicle _this) isKindOf "ParachuteBase") }'];
-};
 
-CLIENT_Supply_RestockFromSupplyCondition =
-{
-	params ["_container", "_supplyType", "_distance"];
-
-	private _supply = objNull;
-	{
-		if (_x getVariable "SupplyType" == _supplyType) exitWith { _supply = _x };
-	} forEach (_container nearObjects _distance);
-
-	not isNull _supply
+	[_vehicle] call Bobcat_SetupClient;
 };
 
 Billboard_ShowMessage =
@@ -515,7 +505,8 @@ Billboard_ShowRule =
 
 	if (_ruleText == "") exitWith {};
 
-	_ruleText = _ruleText + "<br/><br/><t color='#FFFFFF'>Press ESC to dismiss this window</t>";
+	_ruleText = _ruleText + "<br/>
+<br/><t color='#FFFFFF'>Press ESC to dismiss this window</t>";
 
 	[safeZoneW * 0.95, safeZoneH * 0.95, parseText _ruleText] call Billboard_ShowMessage;
 };
@@ -533,39 +524,39 @@ CLIENT_CombatTeleportCondition =
 	_permitTeleport
 };
 
-CLIENT_DisableScrollMenuLevel = 0;
+CLIENT_DisableActionMenuLevel = 0;
 
-CLIENT_DisableScrollMenu =
+CLIENT_DisableActionMenu =
 {
-	CLIENT_DisableScrollMenuLevel = CLIENT_DisableScrollMenuLevel + 1;
+	CLIENT_DisableActionMenuLevel = CLIENT_DisableActionMenuLevel + 1;
 };
 
-CLIENT_EnableScrollMenu =
+CLIENT_EnableActionMenu =
 {
-	CLIENT_DisableScrollMenuLevel = CLIENT_DisableScrollMenuLevel - 1;
+	CLIENT_DisableActionMenuLevel = CLIENT_DisableActionMenuLevel - 1;
 };
 
-CLIENT_ScrollMenuNextHandler =
+CLIENT_ActionMenuNextHandler =
 {
-	CLIENT_DisableScrollMenuLevel > 0
+	CLIENT_DisableActionMenuLevel > 0
 };
 
-CLIENT_ScrollMenuPrevHandler =
+CLIENT_ActionMenuPrevHandler =
 {
-	CLIENT_DisableScrollMenuLevel > 0
+	CLIENT_DisableActionMenuLevel > 0
 };
 
-CLIENT_ScrollMenuActionHandlers = [];
+CLIENT_ActionMenuActionHandlers = [];
 
-CLIENT_ScrollMenuActionHandler =
+CLIENT_ActionMenuActionHandler =
 {
-	if (CLIENT_DisableScrollMenuLevel > 0) exitWith { true };
+	if (CLIENT_DisableActionMenuLevel > 0) exitWith { true };
 
 	private _override = false;
 
 	{
 		_override = _override || (_this call _x);
-	} forEach CLIENT_ScrollMenuActionHandlers;
+	} forEach CLIENT_ActionMenuActionHandlers;
 
 	_override
 };
@@ -581,7 +572,7 @@ CLIENT_OverrideActionHandler =
 	_this call (CLIENT_OverriddenActions select _index select 1)
 };
 
-CLIENT_ScrollMenuActionHandlers pushBack CLIENT_OverrideActionHandler;
+CLIENT_ActionMenuActionHandlers pushBack CLIENT_OverrideActionHandler;
 
 [] spawn
 {
@@ -631,7 +622,7 @@ Go to the fuel source, use the 'Get fuel line' scroll wheel action, move to the 
 the fuel line will drop away from the vehicle and retract.  The fuel HEMTT and Taru fuel pods have an indicator on their exterior to indicate how much fuel remains onboard.<br/>";
 
 DOC_ArmorTransport = "<font size='16'>Reaching an operation</font><br/>
-You can either drive your vehicle to an operation (which is visible on the map as concentric green and red rings) or you can request a 'heavy lift' from
+You can either drive your vehicle to an operation (which is visible on the map as a crossed-swords task icon) or you can request a 'heavy lift' from
 one of two Taru transport helicopters, call signs Grizzly 2 and 3.  When being lifted by helicopter, it is important that the driver is not in the driver's
 seat at any time during the lift procedure.  Ideally, the driver connects the lift lines to your vehicle, then rides in the back of the vehicle during the
 lift.  Once on the ground, the driver can transfer back to the driver's seat.  When at base, move your vehicle to the Heavy Lift Area for pickup.<br/>";
@@ -1180,28 +1171,62 @@ CLIENT_ClearVehicleInventory =
 
 CLIENT_ClearVehicleInventoryCondition =
 {
-	if (vehicle player isKindOf "Man") exitWith { false };
+	if (vehicle player == player) exitWith { false };
 
-	if (player != driver vehicle player && player != commander vehicle player && player != gunner vehicle player) exitWith { false };
+	if (player != driver vehicle player && { player != commander vehicle player } && { player != gunner vehicle player }) exitWith { false };
 
 	true
 };
 
-CLIENT_EditContainerInventoryCondition =
+CLIENT_EC_ActionContinue =
 {
-	params ["_container"];
+	params ["_container", "_object"];
+
+	if (isNil "_object") then { _object = _container getVariable ["CLIENT_EC_ParentObject", _container] };
 
 	if (vehicle player != player) exitWith { false };
 	
 	if (not (lifeState player in ["HEALTHY", "INJURED"])) exitWith { false };
 
+	if (isNull ([_object, "arsenal", 5] call CLIENT_NearSupply)) exitWith { false };
+
+	private _contact = [ASLtoAGL eyePos player, _object] call JB_fnc_distanceToObjectSurface;
+	if (_contact select 2 < 0 || _contact select 2 > 2) exitWith { false };
+
+	true
+};
+
+CLIENT_EC_GetContainer =
+{
+	params ["_container"];
+
+	if (_container isKindOf "GroundWeaponHolder") then
+	{
+		private _innerContainers = everyContainer _container;
+		
+		_container = if (count _innerContainers == 0) then { objNull } else { _innerContainers select 0 select 1 };
+	};
+
+	_container
+};
+
+CLIENT_EC_ActionCondition =
+{
+	params ["_container", "_object"];
+
+	if (_container == _object && { getCursorObjectParams select 2 > 2 }) exitWith { false };
+
+	if (_container != _object && { ASLtoAGL eyePos player distance _object > 2 }) exitWith { false };
+
+	if (not alive _container) exitWith { false };
+
 	if (not ([_container] call JB_fnc_containerIsContainer)) exitWith { false };
 
 	if ([_container] call JB_fnc_containerIsLocked) exitWith { false };
 
-	if (isNull ([_container, "arsenal", 5] call CLIENT_NearSupply)) exitWith { false };
+	if (not ([_container, _object] call CLIENT_EC_ActionContinue)) exitWith { false };
 
-	private _actionID = player getVariable ["CLIENT_EditContainerInventory_Action", -1];
+	private _actionID = player getVariable ["CLIENT_EC_ActionID", -1];
 	if (_actionID != -1) then
 	{
 		player setUserActionText [_actionID, format ["Edit inventory of %1", getText (configFile >> "CfgVehicles" >> typeOf _container >> "displayName")]];
@@ -1210,49 +1235,19 @@ CLIENT_EditContainerInventoryCondition =
 	true
 };
 
-CLIENT_EditContainerInventory =
+CLIENT_EC_Action =
 {
-	_this spawn
-	{
-		params ["_container"];
+	params ["_container", "_object"];
 
-		private _intermediary = typeOf _container createVehicleLocal (call SPM_Util_RandomSpawnPosition);
-		_intermediary enableSimulation false;
-		_intermediary allowDamage false;
-		[_intermediary, _container] call JB_fnc_containerClone;
+	if (_object != _container) then { _container setVariable ["CLIENT_EC_ParentObject", _object] };
 
-		disableSerialization;
-		missionNamespace setVariable ["BIS_fnc_initCuratorAttributes_target", _intermediary];
-		createDialog "RscDisplayAttributesInventory";
+	[_container, { _this call CLIENT_EC_ActionContinue }] call JB_fnc_containerEdit;
+};
 
-		CLIENT_EditContainerInventoryResult = 1;
-
-		private _index = allDisplays findIf { (_x getVariable ["BIS_fnc_initDisplay_configClass", ""]) == "RscDisplayAttributesInventory" };
-		if (_index != -1) then
-		{
-			(alldisplays select _index) displayAddEventHandler ["Unload", { CLIENT_EditContainerInventoryResult = (_this select 1) }];
-		};
-
-		waitUntil { sleep 1; not dialog };
-
-		if (CLIENT_EditContainerInventoryResult == 2) exitWith {};
-
-		private _whitelistGear = call compile preprocessFile "scripts\whitelistGear.sqf";
-		_whitelistGear = [(_whitelistGear select 0) + ["Put", "Throw"], _whitelistGear select 1, (_whitelistGear select 2) + (_whitelistGear select 3)]; // Put the glasses in with the items
-
-		private _whiteListMagazines = [_whitelistGear select 0] call compile preprocessFile "scripts\whitelistMagazines.sqf";
-
-		titleText ["Making changes...", "plain down", 0.2];
-		sleep 1;
-
-		[_container, _intermediary, _whitelistGear + [_whitelistMagazines]] call JB_fnc_containerClone; // Combined whitelist of [weapons, backpacks, items, magazines]
-
-		//TODO: Report items that didn't make it through the whitelist filter.  That would be the contents of _intermediary that aren't in _container
-
-		titleText ["Changes complete", "plain down", 0.2];
-
-		deleteVehicle _intermediary;
-	};
+CLIENT_EC_PlayerInit =
+{
+	private _actionID = player addAction ["Edit inventory of container", { [[cursorObject] call CLIENT_EC_GetContainer, cursorObject] call CLIENT_EC_Action }, nil, 5, false, true, '', '[[cursorObject] call CLIENT_EC_GetContainer, cursorObject] call CLIENT_EC_ActionCondition'];
+	player setVariable ["CLIENT_EC_ActionID", _actionID];
 };
 
 Base_Supply_Drop_Ammo_C_SetupActions =
@@ -1331,10 +1326,20 @@ Logistics_PlaceDepot =
 	_depot setRepairCargo 0;
 
 	_depot allowDamage false;
-	[_depot, false] remoteExec ["enableSimulationGlobal", 2];
-	_depot setVelocity [0,0,0];
 	[_depot] call JB_fnc_containerClear;
 	[_depot] call JB_fnc_containerLock;
+	_depot setVariable ["ASL_DONOTSLING", true, true]; //JIP
+
+	// Dampen velocity as depot tries to jump out of the terrain
+	_depot spawn
+	{
+		private _endMonitorTime = diag_tickTime + 5;
+		while { diag_tickTime < _endMonitorTime } do
+		{
+			_this setVelocity [0,0,0];
+			sleep 0.1;
+		};
+	};
 
 	if ([_depot] call JB_PO_IsTemporaryObject) exitWith {}; // Don't process the local/temporary object
 
@@ -1384,7 +1389,7 @@ Logistics_PlaceFuelBladder =
 		if (count _resources > 0) then { _fuel = _resources select 0 };
 	};
 
-	[_bladder, [[-3.36914,2.49219,0.468579]], _fuel, 60] call JB_fnc_fuelInitSupply;
+	[_bladder, [[-3.36914,2.49219,0.468579]], _fuel, 60] remoteExec ["JB_fnc_fuelInitSupply", 2];
 };
 
 Logistics_StoreFuelBladder =
@@ -1395,8 +1400,37 @@ Logistics_StoreFuelBladder =
 
 	_parameters params ["_bladderType"];
 
-	private _resources = [_bladder getVariable "JBF_FuelRemaining"]; //TODO: Need a function in JB fuel stuff to get the remaining fuel
+	private _resources = [_bladder getVariable "JBF_SupplyRemaining"]; //TODO: Need a function in JB fuel stuff to get the remaining supply
 	[_bladderType, _resources] remoteExec ["Logistics_SetSourceResources", 2];
+};
+
+Logistics_PlaceHelipad =
+{
+	params ["_source", "_proxy", "_parameters"];
+
+	_parameters params ["_helipadType"];
+
+	(_helipadType createVehicle (getPos _proxy)) attachTo [_proxy, [0,0,0]];
+
+	// When placed, make sure simulation is off for the proxy.  Otherwise, it can be moved around,
+	// dragging the helipad with it - or flipping over, hiding the helipad.
+
+	if ([_proxy] call JB_PO_IsTemporaryObject) exitWith {};
+
+	[_proxy] spawn
+	{
+		params ["_proxy"];
+
+		sleep 0.5; // Immediate change messes with display of helipad
+		[_proxy, false] remoteExec ["enableSimulationGlobal", 2];
+	};
+};
+
+Logistics_StoreHelipad =
+{
+	params ["_source", "_proxy", "_parameters"];
+
+	{ deleteVehicle _x } forEach attachedObjects _proxy;
 };
 
 CLIENT_GetVisibleObjects =
@@ -1427,4 +1461,90 @@ CLIENT_GetVisibleObjects =
 	};
 
 	_objects
+};
+
+B_Soldier_Repair_F_GetRepairProfile =
+{
+	private _engineer = param [0, objNull, [objNull]];
+	private _vehicle = param [1, objNull, [objNull]];
+	private _systemName = param [2, "", [""]];
+
+	if (not ((toLower _systemName) find "wheel" >= 0) && { (not ("ToolKit" in (backpackItems player))) }) exitWith
+	{
+		[true, 0, 0, format ["%1 repairs require a Toolkit", _systemName], false]
+	};
+
+	private _repairPPS = 1.0;
+	private _targetPC = 0.4;
+	private _message = "";
+
+	if (_vehicle isKindOf "Air") then
+	{
+		_repairPPS = 0.7;
+	}
+	else
+	{
+		if (_vehicle isKindOf "Ship") then
+		{
+			_repairPPS = 0.4;
+		};
+	};
+
+	{
+		switch (_x getVariable ["REPAIR_ServiceLevel", 0]) do
+		{
+			case 1:
+			{
+				if (_targetPC > 0.2) then
+				{
+					_targetPC = 0.2;
+					_message = format ["Using repair facilities of %1", [typeOf _x, "CfgVehicles"] call JB_fnc_displayName];
+				};
+			};
+			case 2:
+			{
+				if (_targetPC > 0.0) then
+				{
+					_targetPC = 0.0;
+					_message = format ["Using repair facilities of %1", [typeOf _x, "CfgVehicles"] call JB_fnc_displayName];
+				};
+			};
+		};
+
+	} forEach (nearestObjects [_engineer, ["All"], 15]);
+
+	[true, _repairPPS, _targetPC, _message, true]
+};
+
+B_Soldier_Repair_F_CanRepairVehicle =
+{
+	private _engineer = param [0, objNull, [objNull]];
+	private _vehicle = param [1, objNull, [objNull]];
+
+	(_vehicle isKindOf "Car" || _vehicle isKindOf "Tank" || _vehicle isKindOf "Air" || _vehicle isKindOf "Ship")
+};
+
+CLIENT_RestrictMovement =
+{
+	_this spawn
+	{
+		params ["_player", "_trigger"];
+
+		private _respawn = _player getVariable ["CLIENT_PlayerPosition", []];
+
+		while { alive _player } do
+		{
+			if (not ([_trigger, _player] call BIS_fnc_inTrigger)) then
+			{
+				moveOut _player;
+				waitUntil { vehicle _player == _player };
+				player setVelocity [0,0,0];
+				player setPosASL (_respawn select 0);
+				player setDir (_respawn select 1);
+				player switchMove "";
+			};
+
+			sleep 3;
+		}
+	};
 };

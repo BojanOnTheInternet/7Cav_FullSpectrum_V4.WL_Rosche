@@ -8,31 +8,29 @@ VP_CheckPermissions =
 	private _allMessages = [];
 
 	// The vehicle type wasn't mentioned in any permissions, so show a generic refusal message to the player.
-	if (count _applicable == 0) then
+	if (count _applicable == 0) exitWith
 	{
 		private _targetName = [typeOf _target, "CfgVehicles"] call JB_fnc_displayName;
 
 		switch (_type) do
 		{
-			case "VP_Driver": { _allMessages pushBack format ["You may not drive this %1", _targetName] };
-			case "VP_Gunner": { _allMessages pushBack format ["You may not operate weapons on this %1", _targetName] };
-			case "VP_Commander": { _allMessages pushBack format ["You may not command this %1", _targetName] };
-			case "VP_Pilot": { _allMessages pushBack format ["You may not fly this %1", _targetName] };
-			case "VP_Turret": { _allMessages pushBack format ["You may not operate weapons on this %1", _targetName] };
-			case "VP_Cargo": { _allMessages pushBack format ["You may not ride in this %1", _targetName] };
+			case "VP_Driver": { _allMessages pushBackUnique format ["You may not drive this %1", _targetName] };
+			case "VP_Gunner": { _allMessages pushBackUnique format ["You may not operate weapons on this %1", _targetName] };
+			case "VP_Commander": { _allMessages pushBackUnique format ["You may not command this %1", _targetName] };
+			case "VP_Pilot": { _allMessages pushBackUnique format ["You may not fly this %1", _targetName] };
+			case "VP_Turret": { _allMessages pushBackUnique format ["You may not operate weapons on this %1", _targetName] };
+			case "VP_Cargo": { _allMessages pushBackUnique format ["You may not ride in this %1", _targetName] };
 		};
 		
 		[_permitted, _allMessages]
-	}
-	else
-	{
-		private _messages = [];
-		{
-			_messages = (_x select 1) apply { [_target, _caller, _type] call _x };
-			if ({ _x != "" } count _messages == 0) then { _permitted pushBack _x };
-			_allMessages append (_messages select { _x != "" });
-		} forEach _applicable;
 	};
+
+	private _messages = [];
+	{
+		_messages = (_x select 1) apply { [_target, _caller, _type] call _x };
+		if ({ _x != "" } count _messages == 0) then { _permitted pushBack _x };
+		{ _allMessages pushBackUnique _x } forEach (_messages select { _x != "" });
+	} forEach _applicable;
 
 	[_permitted, _allMessages]
 };

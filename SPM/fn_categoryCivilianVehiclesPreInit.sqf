@@ -28,7 +28,7 @@ SPM_CivilianVehiclesCategory_CreateVehicle =
 
 	private _vehicleType = selectRandom SPM_CivilianVehiclesCategory_VehicleTypes;
 
-	private _vehicle = [_vehicleType, _position, _direction, "can_collide"] call SPM_fnc_spawnVehicle;
+	private _vehicle = [_vehicleType, _position, _direction] call SPM_fnc_spawnVehicle;
 	_vehicle lock 3;
 
 	_vehicle

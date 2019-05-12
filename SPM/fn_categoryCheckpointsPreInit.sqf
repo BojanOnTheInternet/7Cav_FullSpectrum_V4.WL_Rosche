@@ -50,18 +50,18 @@ OO_TRACE_DECL(SPM_Checkpoints_CreateCheckpoint) =
 	{
 		case (_side1 distance _side2 < 12.0):
 		{
-			_gate = ["Land_BarGate_01_open_F", _position vectorAdd (_perpendicular1 vectorMultiply 0.5), _direction, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle;
+			_gate = ["Land_BarGate_01_open_F", _position vectorAdd (_perpendicular1 vectorMultiply 0.5), _direction] call SPM_fnc_spawnVehicle;
 			_gate allowDamage false;
 			_objects pushBack _gate;
 		};
 		case (_side1 distance _side2 < 24.0):
 		{
-			_gate = ["Land_BarGate_01_open_F", _position vectorAdd (_perpendicular1 vectorMultiply 4.1), _direction, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle;
+			_gate = ["Land_BarGate_01_open_F", _position vectorAdd (_perpendicular1 vectorMultiply 4.1), _direction] call SPM_fnc_spawnVehicle;
 			_gate allowDamage false;
 			_objects pushBack _gate;
 			_side1 = _position vectorAdd (_perpendicular1 vectorMultiply (8.2 + 1.0));
 
-			_gate = ["Land_BarGate_01_open_F", _position vectorAdd (_perpendicular2 vectorMultiply 4.1), _direction + 180, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle;
+			_gate = ["Land_BarGate_01_open_F", _position vectorAdd (_perpendicular2 vectorMultiply 4.1), _direction + 180] call SPM_fnc_spawnVehicle;
 			_gate allowDamage false;
 			_objects pushBack _gate;
 			_side2 = _position vectorAdd (_perpendicular2 vectorMultiply (8.2 + 1.0));
@@ -70,24 +70,24 @@ OO_TRACE_DECL(SPM_Checkpoints_CreateCheckpoint) =
 
 	//TODO: Bunker and sandbags should be simple objects
 
-	private _bunker = ["Land_BagBunker_Small_F", _side1 vectorAdd (_perpendicular1 vectorMultiply (4.5 / 2.0)), _direction + 90, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle;
+	private _bunker = ["Land_BagBunker_Small_F", _side1 vectorAdd (_perpendicular1 vectorMultiply (4.5 / 2.0)), _direction + 90] call SPM_fnc_spawnVehicle;
 	_objects pushBack _bunker;
 	(_objects select (count _objects - 1)) enableSimulationGlobal false;
 
-	_objects pushBack (["Land_BagFence_Long_F", _side1 vectorAdd (_perpendicular1 vectorMultiply (4.5 + 0.0)), _direction + 90, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
+	_objects pushBack (["Land_BagFence_Long_F", _side1 vectorAdd (_perpendicular1 vectorMultiply (4.5 + 0.0)), _direction + 90] call SPM_fnc_spawnVehicle);
 	(_objects select (count _objects - 1)) enableSimulationGlobal false;
 
-	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [-2.07,-2.37,-0.93], _direction + 135, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
-	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [ 2.37,-2.34,-0.88], _direction + 45, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
-	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [ 2.16, 1.85,-0.99], _direction - 45, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
-	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [-1.64, 2.20,-1.02], _direction - 135, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
+	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [-2.07,-2.37,-0.93], _direction + 135] call SPM_fnc_spawnVehicle);
+	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [ 2.37,-2.34,-0.88], _direction + 45] call SPM_fnc_spawnVehicle);
+	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [ 2.16, 1.85,-0.99], _direction - 45] call SPM_fnc_spawnVehicle);
+	_objects pushBack (["Land_PortableLight_single_F", _bunker modelToWorld [-1.64, 2.20,-1.02], _direction - 135] call SPM_fnc_spawnVehicle);
 
 	private _razorWire = [];
 	private _positions = [];
 	
-	_razorWire pushBack (["Land_Razorwire_F", _side1 vectorAdd (_perpendicular1 vectorMultiply (5.4 + 8.7 / 2.0)), _direction, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
-	_razorWire pushBack (["Land_Razorwire_F", _side2 vectorAdd (_perpendicular2 vectorMultiply (8.7 / 2.0)), _direction, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
-	_razorWire pushBack (["Land_Razorwire_F", _side2 vectorAdd (_perpendicular2 vectorMultiply (8.7 + 8.7 / 2.0)), _direction, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle);
+	_razorWire pushBack (["Land_Razorwire_F", _side1 vectorAdd (_perpendicular1 vectorMultiply (5.4 + 8.7 / 2.0)), _direction] call SPM_fnc_spawnVehicle);
+	_razorWire pushBack (["Land_Razorwire_F", _side2 vectorAdd (_perpendicular2 vectorMultiply (8.7 / 2.0)), _direction] call SPM_fnc_spawnVehicle);
+	_razorWire pushBack (["Land_Razorwire_F", _side2 vectorAdd (_perpendicular2 vectorMultiply (8.7 + 8.7 / 2.0)), _direction] call SPM_fnc_spawnVehicle);
 
 	{
 		_positions = [getPos _x];

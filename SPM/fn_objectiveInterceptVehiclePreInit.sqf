@@ -71,12 +71,20 @@ OO_TRACE_DECL(SPM_ObjectiveInterceptVehicle_Update) =
 	if (not isNil "_vehicle") then
 	{
 		if (isNull _vehicle) exitWith { OO_SET(_objective,MissionObjective,State,"error") };
-		if (not alive _vehicle) exitWith { OO_SET(_objective,MissionObjective,State,"failed") };
+		if (not alive _vehicle) exitWith
+		{
+			OO_SET(_objective,MissionObjective,State,"failed");
+			[_objective, ["Interception failed.  Target has been destroyed", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+		};
 
 		private _request = OO_GETREF(_objective,ObjectiveInterceptVehicle,_VehicleRequest);
 		private _destination = OO_GET(_request,TransportRequest,Destination);
 
-		if (_vehicle distance _destination < 100) exitWith { OO_SET(_objective,MissionObjective,State,"failed") };
+		if (_vehicle distance _destination < 100) exitWith
+		{
+			OO_SET(_objective,MissionObjective,State,"failed");
+			[_objective, ["Interception failed.  Target has reached its destination", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+		};
 	};
 };
 

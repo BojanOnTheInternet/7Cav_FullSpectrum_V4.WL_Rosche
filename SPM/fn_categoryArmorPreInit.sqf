@@ -63,6 +63,8 @@ OO_TRACE_DECL(SPM_Armor_Task_Patrol) =
 		{
 			[_patrolGroup] call SPM_DeletePatrolWaypoints;
 
+			//TODO: Be more intelligent about target selection.  Consider known 'targets' of this unit.  Consider distribution of east
+			// units on west units so that they don't all go for the same west unit.
 			private _westForce = [OO_GET(_category,ForceCategory,RangeWest)] call OO_METHOD(_category,ForceCategory,GetForceLevelsWest);
 			if (count _westForce > 0) then
 			{
@@ -167,16 +169,12 @@ OO_TRACE_DECL(SPM_Armor_Retire) =
 
 	_parameters params ["_category", "_allowReinstate"];
 
-	private _strongpoint = OO_GETREF(_category,Category,Strongpoint);
-	private _center = OO_GET(_strongpoint,Strongpoint,Position);
-	private _radius = OO_GET(_strongpoint,Strongpoint,ActivityRadius);
-
 	private _forceUnit = OO_GET(_category,ForceCategory,ForceUnits) select _forceUnitIndex;
-	private _units = OO_GET(_forceUnit,ForceUnit,Units);
-	private _vehicle = OO_GET(_forceUnit,ForceUnit,Vehicle);
 
 	// If already retiring, return
-	if ((group driver _vehicle) getVariable ["SPM_Force_Retiring", false]) exitWith {};
+	if ([_forceUnit] call SPM_Force_IsRetiring) exitWith {};
+
+	private _vehicle = OO_GET(_forceUnit,ForceUnit,Vehicle);
 
 	if (not _allowReinstate) then { _vehicle setVariable ["SPM_Force_AllowReinstate", false] };
 
@@ -187,6 +185,10 @@ OO_TRACE_DECL(SPM_Armor_Retire) =
 
 	if (not _preplacedEquipment) then
 	{
+		private _strongpoint = OO_GETREF(_category,Category,Strongpoint);
+		private _center = OO_GET(_strongpoint,Strongpoint,Position);
+		private _radius = OO_GET(_strongpoint,Strongpoint,ActivityRadius);
+
 		if (_center distance _retirementPosition < _radius) then
 		{
 			private _approachDirection = OO_GET(_category,ForceCategory,CallupDirection);
@@ -211,18 +213,17 @@ OO_TRACE_DECL(SPM_Armor_Retire) =
 		_extendedPosition = _retirementPosition vectorAdd (_toRetirementPosition vectorMultiply 500); // To keep the vehicle moving at speed through its retirement position, particularly aircraft
 	};
 
-	{
-		[_x] call SPM_DeletePatrolWaypoints;
+	private _group = [] call OO_METHOD(_forceUnit,ForceUnit,GetGroup);
 
-		[units _x] call SPM_Util_AIOnlyMove; //TODO: If the crew is fixing the vehicle, they won't be able to mount up to leave
+	[_group] call SPM_DeletePatrolWaypoints;
 
-		private _waypoint = [_x, _retirementPosition] call SPM_AddPatrolWaypoint;
-		[_waypoint, SPM_Armor_WS_Salvage, _category] call SPM_AddPatrolWaypointStatements;
-		if (count _extendedPosition > 0) then { [_x, _extendedPosition] call SPM_AddPatrolWaypoint };
+	[units _group] call SPM_Util_AIOnlyMove; //TODO: If the crew is fixing the vehicle, they won't be able to mount up to leave
 
-		_x setVariable ["SPM_Force_Retiring", true];
+	private _waypoint = [_group, _retirementPosition] call SPM_AddPatrolWaypoint;
+	[_waypoint, SPM_Armor_WS_Salvage, _category] call SPM_AddPatrolWaypointStatements;
+	if (count _extendedPosition > 0) then { [_group, _extendedPosition] call SPM_AddPatrolWaypoint };
 
-	} forEach ([] call OO_METHOD(_forceUnit,ForceUnit,GetGroups));
+	[_forceUnit, true] call SPM_Force_SetRetiring;
 
 	[_vehicle, "ArmorStatus", "Retired"] call TRACE_SetObjectString;
 };
@@ -236,14 +237,14 @@ OO_TRACE_DECL(SPM_Armor_Reinstate) =
 	private _vehicle = OO_GET(_forceUnit,ForceUnit,Vehicle);
 	[_vehicle, "ArmorStatus", nil] call TRACE_SetObjectString;
 
-	{
-		[_x] call SPM_DeletePatrolWaypoints;
+	private _group = [] call OO_METHOD(_forceUnit,ForceUnit,GetGroup);
 
-		[units _x] call SPM_Util_AIFullCapability;
+	[_group] call SPM_DeletePatrolWaypoints;
 
-		_x setVariable ["SPM_Force_Retiring", nil];
-		[_category, _x] call SPM_Armor_Task_Patrol;
-	} forEach ([] call OO_METHOD(_forceUnit,ForceUnit,GetGroups));
+	[units _group] call SPM_Util_AIFullCapability;
+
+	[_forceUnit, false] call SPM_Force_SetRetiring;
+	[_category, _group] call SPM_Armor_Task_Patrol;
 };
 
 OO_TRACE_DECL(SPM_Armor_CreateUnit) =
@@ -257,6 +258,14 @@ OO_TRACE_DECL(SPM_Armor_CreateUnit) =
 		_unitVehicle = _callup;
 		_unitVehicle setVariable ["SPM_Force_PreplacedEquipment", true];
 		_position = getPosATL _unitVehicle;
+
+		// Bring the vehicle's turrets local so that the crew will go in properly.  This can take multiple seconds.
+		if (not local _unitVehicle) then
+		{
+			_unitVehicle setOwner clientOwner;
+			waitUntil { not alive _unitVehicle || { local _unitVehicle } };
+			waitUntil { not alive _unitVehicle || { allTurrets _unitVehicle findIf { (_unitVehicle turretOwner _x) != clientOwner } == -1 } };
+		};
 	}
 	else
 	{
@@ -362,6 +371,25 @@ OO_TRACE_DECL(SPM_Armor_Delete) =
 	[] call OO_METHOD_PARENT(_category,Root,Delete,ForceCategory);
 };
 
+OO_TRACE_DECL(SPM_Armor_Command) =
+{
+	params ["_category", "_command", "_parameters"];
+
+	if (_command != "surrender") exitWith { [_command, _parameters] call OO_METHOD_PARENT(_category,Category,Command,ForceCategory) };
+
+	OO_SET(_category,ForceCategory,_Surrendered,true);
+
+	{
+		[_forEachIndex, [_category, false]] call SPM_Armor_Retire;
+
+		private _vehicle = OO_GET(_x,ForceUnit,Vehicle);
+		if ({ alive _x } count crew _vehicle > 0 && { _vehicle isKindOf "Tank" || _vehicle isKindOf "Car" }) then { _vehicle forceFlagTexture "\A3\Data_F\Flags\Flag_white_CO.paa" };
+
+		//TODO: If fired upon by player, take away ammo from firing vehicle
+
+	} forEach OO_GET(_category,ForceCategory,ForceUnits);
+};
+
 OO_TRACE_DECL(SPM_Armor_BeginTemporaryDuty) =
 {
 	params ["_category"];
@@ -382,9 +410,8 @@ OO_TRACE_DECL(SPM_Armor_BeginTemporaryDuty) =
 	OO_GET(_dutyUnit,ForceUnit,Vehicle) setVariable ["SPM_Force_AllowRetire", false];
 	_dutyUnits pushBack _dutyUnit;
 
-	{
-		[_x] call SPM_DeletePatrolWaypoints;
-	} forEach ([] call OO_METHOD(_dutyUnit,ForceUnit,GetGroups));
+	private _group = [] call OO_METHOD(_dutyUnit,ForceUnit,GetGroup);
+	[_group] call SPM_DeletePatrolWaypoints;
 
 	_dutyUnit
 };
@@ -394,18 +421,14 @@ OO_TRACE_DECL(SPM_Armor_EndTemporaryDuty) =
 	params ["_category", "_forceUnit"];
 
 	private _dutyUnits = OO_GET(_category,ArmorCategory,DutyUnits);
-	private _forceUnitGroups = [] call OO_METHOD(_forceUnit,ForceUnit,GetGroups);
+	private _group = [] call OO_METHOD(_forceUnit,ForceUnit,GetGroup);
 
-	private _index = -1;
-	{ private _groups = [] call OO_METHOD(_x,ForceUnit,GetGroups); if (count _groups != count (_groups - _forceUnitGroups)) exitWith { _index = _forEachIndex } } forEach _dutyUnits;
-
+	private _index = _dutyUnits findIf { _group == ([] call OO_METHOD(_x,ForceUnit,GetGroup)) };
 	if (_index == -1) exitWith { diag_log format ["SPM_Armor_EndTemporaryDuty: unknown duty unit: %1", _forceUnit] };
 
 	OO_GET(_forceUnit,ForceUnit,Vehicle) setVariable ["SPM_Force_AllowRetire", nil];
 
-	{
-		[_category, _x] call SPM_Armor_Task_Patrol;
-	} forEach _forceUnitGroups;
+	[_category, _group] call SPM_Armor_Task_Patrol;
 
 	_dutyUnits deleteAt _index
 };
@@ -421,6 +444,9 @@ OO_TRACE_DECL(SPM_Armor_RemoveCapturedForceUnits) =
 		if (side _vehicle == _sideWest) then
 		{
 			OO_SET(_forceUnit,ForceUnit,Vehicle,objNull);
+
+			// Remove any trace labels
+			[_vehicle, "ArmorStatus", nil] call TRACE_SetObjectString;
 
 			// Make sure there are no speed limitations on the vehicle
 			[_vehicle, -1] call JB_fnc_limitSpeed;
@@ -442,23 +468,21 @@ OO_TRACE_DECL(SPM_Armor_PreplacedEquipment) =
 	private _innerRadius = OO_GET(_area,StrongpointArea,InnerRadius);
 	private _outerRadius = OO_GET(_area,StrongpointArea,OuterRadius);
 
-	private _callupsEast = OO_GET(_category,ForceCategory,CallupsEast);
-	private _preplacedTypes = _callupsEast apply { _x select 0 };
+	private _ratingsEast = OO_GET(_category,ForceCategory,RatingsEast);
+	private _preplacedTypes = _ratingsEast apply { _x select 0 };
 	private _preplacedUnits = _center nearEntities [_preplacedTypes, _outerRadius] select { _x distance _center >= _innerRadius };
-	_preplacedUnits = _preplacedUnits select { not (_x getVariable ["SPM_Force_CalledUnit", false]) && { count crew _x == 0 } && { simulationEnabled _x } && { [_x] call SPM_Force_IsCombatEffectiveVehicle } };
+
+	OO_TRACE_SYMBOL(_ratingsEast);
+	OO_TRACE_SYMBOL(_preplacedTypes);
 
 	private _type = "";
-	private _units = [];
-	private _preplacedEquipment = [];
-	{
-		_type = _x;
-		_units = _preplacedUnits select { _x isKindOf _type };
-		if (count _units > 0) then { _preplacedEquipment pushBack [_type, _units] };
-	} forEach _preplacedTypes;
+	_preplacedUnits = _preplacedUnits select { not (_x getVariable ["SPM_Force_CalledUnit", false]) && { count crew _x == 0 } && { simulationEnabled _x } && { [_x] call SPM_Force_IsCombatEffectiveVehicle } };
+	_preplacedUnits = _preplacedTypes apply { _type = _x; [_type, _preplacedUnits select { _x isKindOf _type }] };
+	_preplacedUnits = _preplacedUnits select { count (_x select 1) > 0 };
 
-	OO_TRACE_SYMBOL(_preplacedEquipment);
+	OO_TRACE_SYMBOL(_preplacedUnits);
 
-	_preplacedEquipment
+	_preplacedUnits
 };
 
 OO_TRACE_DECL(SPM_Armor_Update) =
@@ -467,37 +491,42 @@ OO_TRACE_DECL(SPM_Armor_Update) =
 
 	[] call OO_METHOD_PARENT(_category,Category,Update,ForceCategory);
 
-	if (OO_GET(_category,ForceCategory,_Surrendered)) exitWith {};
-
 	private _sideWest = OO_GET(_category,ForceCategory,SideWest);
 
 	private _forceUnits = OO_GET(_category,ForceCategory,ForceUnits);
 	[_forceUnits, _sideWest] call SPM_Armor_RemoveCapturedForceUnits;
 	[_forceUnits, 100, _sideWest] call SPM_Force_DeleteEnemiesOnBases;
 
-	[_forceUnits, SPM_Armor_Retire, [_category, false]] call SPM_Force_RetireDepleted;
+	if (OO_GET(_category,ForceCategory,_Surrendered)) exitWith {};
 
-	// Retask any units that have succeeded in getting the crew out of their target vehicle
+	[_forceUnits, SPM_Armor_Retire, [_category, false]] call SPM_Force_ForEachDepleted;
+
+	// Retask any active units that have no target or that have succeeded in getting the crew out of their target vehicle
 	if (OO_GET(_category,ArmorCategory,PatrolType) == "target") then
 	{
 		private _units = [];
 		private _vehicle = objNull;
 		private _group = grpNull;
+
 		{
 			_units = OO_GET(_x,ForceUnit,Units) select { alive _x };
 			if (count _units > 0) then
 			{
 				_group = group (_units select 0);
-				if (currentWaypoint _group < count waypoints _group) then
+				if (currentWaypoint _group == count waypoints _group) then
+				{
+					[_category, _group] call SPM_Armor_Task_Patrol;
+				}
+				else
 				{
 					_vehicle = waypointAttachedVehicle ((waypoints _group) select (currentWaypoint _group));
-					if (not isNull _vehicle && { count ((crew _vehicle) select { alive _x }) == 0 }) then
+					if (count ((crew _vehicle) select { alive _x }) == 0) then
 					{
 						[_category, _group] call SPM_Armor_Task_Patrol;
 					};
 				};
 			};
-		} forEach _forceUnits;
+		} forEach (_forceUnits select { not ([_x] call SPM_Force_IsRetiring) });
 	};
 
 	[_forceUnits, { not alive OO_GET(_x,ForceUnit,Vehicle) }] call SPM_Force_DeleteForceUnits; //TODO: Retire?
@@ -508,8 +537,6 @@ OO_TRACE_DECL(SPM_Armor_Update) =
 	_westForce = _westForce select { canFire OO_GET(_x,ForceRating,Vehicle) };
 
 	private _preplacedEquipment = if (OO_GET(_category,ArmorCategory,UsePreplacedEquipment)) then { [_category] call SPM_Armor_PreplacedEquipment } else { [] };
-
-	OO_TRACE_SYMBOL(_preplacedEquipment);
 
 	private _changes = [_category, _westForce, _eastForce, _preplacedEquipment] call SPM_Force_Rebalance;
 
@@ -588,10 +615,8 @@ OO_TRACE_DECL(SPM_Armor_Update) =
 
 					if (count _groundSpawnpoint == 0) then
 					{
-						_groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetGroundSpawnpoint;
-						// Comments made by Bojan
-						// _groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), _center, _outerRadius, OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetRoadSpawnpoint;
-						// if (count (_groundSpawnpoint select 0) == 0) then { _groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetGroundSpawnpoint };
+						_groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), _center, _outerRadius, OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetRoadSpawnpoint;
+						if (count (_groundSpawnpoint select 0) == 0) then { _groundSpawnpoint = [OO_GET(_strongpoint,Strongpoint,Position), OO_GET(_strongpoint,Strongpoint,ActivityRadius), OO_GET(_category,ForceCategory,SideWest), _approachDirection select 0, _approachDirection select 1] call SPM_Util_GetGroundSpawnpoint };
 					};
 					_groundSpawnpoint
 				};
@@ -614,6 +639,7 @@ OO_BEGIN_SUBCLASS(ArmorCategory,ForceCategory);
 	OO_OVERRIDE_METHOD(ArmorCategory,Root,Create,SPM_Armor_Create);
 	OO_OVERRIDE_METHOD(ArmorCategory,Root,Delete,SPM_Armor_Delete);
 	OO_OVERRIDE_METHOD(ArmorCategory,Category,Update,SPM_Armor_Update);
+	OO_OVERRIDE_METHOD(ArmorCategory,Category,Command,SPM_Armor_Command);
 	OO_DEFINE_METHOD(ArmorCategory,CreateUnit,SPM_Armor_CreateUnit);
 	OO_DEFINE_METHOD(ArmorCategory,BeginTemporaryDuty,SPM_Armor_BeginTemporaryDuty);
 	OO_DEFINE_METHOD(ArmorCategory,EndTemporaryDuty,SPM_Armor_EndTemporaryDuty);
@@ -623,5 +649,5 @@ OO_BEGIN_SUBCLASS(ArmorCategory,ForceCategory);
 	OO_DEFINE_PROPERTY(ArmorCategory,CallupInterval,"ARRAY",CALLUP_INTERVAL);
 	OO_DEFINE_PROPERTY(ArmorCategory,_RetireTime,"SCALAR",0);
 	OO_DEFINE_PROPERTY(ArmorCategory,RetireInterval,"ARRAY",RETIRE_INTERVAL);
-	OO_DEFINE_PROPERTY(ArmorCategory,UsePreplacedEquipment,"BOOL",false);
+	OO_DEFINE_PROPERTY(ArmorCategory,UsePreplacedEquipment,"BOOL",false); // Attempt to find empty vehicles of the type listed in ForceCategory,EastRatings and activate them as they are.
 OO_END_SUBCLASS(ArmorCategory);

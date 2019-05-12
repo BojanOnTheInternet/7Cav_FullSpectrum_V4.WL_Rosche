@@ -92,13 +92,13 @@ OO_TRACE_DECL(SPM_HeadquartersGarrison_Update) =
 	_eastForce = _eastForce select { not fleeing OO_GET(_x,ForceRating,Vehicle) }; // East infantry anywhere, not fleeing
 	private _eastRating = 0; { _eastRating = _eastRating + OO_GET(_x,ForceRating,Rating) } forEach _eastForce;
 
-	_eastRating = _eastRating + OO_GET(_garrison,ForceCategory,Reserves);
-
 	private _traceObject = OO_GET(_objective,HeadquartersGarrisonCategory,_TraceObject);
 	if (not isNull _traceObject) then
 	{
 		[_traceObject, "C1", format ["%1 (%2 reserves, surrender at %3)", floor _eastRating, floor OO_GET(_garrison,ForceCategory,Reserves), floor OO_GET(_objective,HeadquartersGarrisonCategory,SurrenderRating)]] call TRACE_SetObjectString;
 	};
+
+	_eastRating = _eastRating + OO_GET(_garrison,ForceCategory,Reserves);
 
 	private _flagpole = OO_GET(_objective,HeadquartersCategory,Flagpole);
 	if (isNull _flagpole) then

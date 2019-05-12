@@ -41,17 +41,19 @@ OO_TRACE_DECL(SPM_ObjectiveProtectCivilians_Update) =
 					if (OO_INSTANCE_ISOFCLASS(_x,InfantryGarrisonCategory) && { OO_GET(_x,ForceCategory,SideEast) == civilian }) exitWith { _garrison = _x };
 				} forEach OO_GET(_mission,Strongpoint,Categories);
 
+				OO_SET(_objective,MissionObjective,State,"active");
+
 				if (not OO_ISNULL(_garrison)) then
 				{
 					OO_SET(_objective,ObjectiveProtectCivilians,_Garrison,_garrison);
 
-					OO_SET(_objective,MissionObjective,State,"active");
-
 					private _objectiveDescription = [] call OO_METHOD(_objective,MissionObjective,GetDescription);
 					[_objective, _objectiveDescription, "objective-description"] call OO_METHOD(_objective,Category,SendNotification);
-
-					OO_SET(_objective,MissionObjective,State,"succeeded"); // Optional objective.  Default to complete, but detect failure
 				};
+
+				OO_SET(_objective,MissionObjective,State,"succeeded"); // Optional objective.  Default to complete, but detect failure
+
+				if (OO_ISNULL(_garrison)) then { OO_SET(_objective,Category,UpdateTime,1e30) }; // If no civilians, then we don't ever need to do anything else.  There's no possibility of failure.
 			};
 		};
 
@@ -68,10 +70,8 @@ OO_TRACE_DECL(SPM_ObjectiveProtectCivilians_Update) =
 
 			if (count _civilians + _deathsPermitted < _numberCivilians) then
 			{
-				private _message = format ["Too many civilians have died during this operation"];
-				[_objective, [_message], "event"] call OO_METHOD(_objective,Category,SendNotification);
-
 				OO_SET(_objective,MissionObjective,State,"failed");
+				[_objective, ["Too many civilians have died", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
 				OO_SET(_objective,Category,UpdateTime,1e30);
 			};
 		};

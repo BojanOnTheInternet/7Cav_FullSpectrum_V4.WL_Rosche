@@ -185,7 +185,7 @@ OO_TRACE_DECL(SPM_SOC_MissionInterceptConvoy) =
 	private _normalSpacing = [] call OO_CREATE(ConvoySpacing);
 	private _wideSpacing = [50^2, 60^2, 80^2, 100^2, 150^2] call OO_CREATE(ConvoySpacing);
 
-	private _teamDescriptor = [(configFile >> "CfgGroups" >> "East" >> "OPF_F" >> "Infantry" >> "OIA_InfTeam")] call SPM_fnc_groupFromConfig;
+	private _teamDescriptor = [(configfile >> "CfgGroups" >> "East" >> "LOP_US" >> "Infantry" >> "LOP_US_FT_section")] call SPM_fnc_groupFromConfig;
 
 	private _convoyDescription = [];
 
@@ -193,40 +193,26 @@ OO_TRACE_DECL(SPM_SOC_MissionInterceptConvoy) =
 	{
 		case 1:
 		{
-			_convoyDescription pushBack (["O_MRAP_02_hmg_F", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_APC_Wheeled_02_rcws_F", [{},[0]], [_teamDescriptor, _teamDescriptor], _wideSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_Truck_03_covered_F", [{},[0]], [_teamDescriptor, _teamDescriptor, _teamDescriptor, _teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_MRAP_02_F", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_UAZ_DshKM", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["rhs_tigr_m_vdv", [{},[0]], [_teamDescriptor, _teamDescriptor], _wideSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_UAZ_DshKM", [{},[0]], [_teamDescriptor, _teamDescriptor, _teamDescriptor, _teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_UAZ_AGS", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
 		};
 
 		case 2:
 		{
-			_convoyDescription pushBack (["O_LSV_02_armed_F", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_APC_Wheeled_02_rcws_F",
-				[
-					{
-						[_this select 0] call SPM_Transport_RemoveWeapons;
-
-						(_this select 0) addMagazine "500Rnd_65x39_Belt_Tracer_Green_Splash";
-						(_this select 0) addWeapon "LMG_RCWS";
-					},[0]], [_teamDescriptor, _teamDescriptor], _wideSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_APC_Wheeled_02_rcws_F",
-				[
-					{
-						[_this select 0] call SPM_Transport_RemoveWeapons;
-
-						(_this select 0) addMagazine "500Rnd_65x39_Belt_Tracer_Green_Splash";
-						(_this select 0) addWeapon "LMG_RCWS";
-					},[0]], [_teamDescriptor, _teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_LSV_02_unarmed_F", [{},[0]], [_teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_UAZ_DshKM", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["rhs_tigr_m_vdv", [{},[0]], [_teamDescriptor, _teamDescriptor], _wideSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["rhs_tigr_m_vdv", [{},[0]], [_teamDescriptor, _teamDescriptor, _teamDescriptor, _teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_UAZ_AGS", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
 		};
 
 		case 3:
 		{
-			_convoyDescription pushBack (["O_LSV_02_armed_F", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_LSV_02_unarmed_F", [{},[0]], [_teamDescriptor], _wideSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_Truck_03_transport_F", [{},[0]], [_teamDescriptor, _teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
-			_convoyDescription pushBack (["O_LSV_02_unarmed_F", [{},[0]], [_teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_UAZ_DshKM", [{},[0]], [], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_BMP2D", [{},[0]], [_teamDescriptor], _wideSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_Ural", [{},[0]], [_teamDescriptor, _teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
+			_convoyDescription pushBack (["LOP_US_UAZ_AGS", [{},[0]], [_teamDescriptor], _normalSpacing] call OO_CREATE(ConvoyVehicle));
 		};
 
 		case 4:
@@ -868,6 +854,11 @@ OO_TRACE_DECL(SPM_SOC_RequestMission) =
 	if (not ([_player] call BOTH_IsSpecOpsMember)) exitWith
 	{
 		[ "This device is restricted for use by the special operations team", 1] remoteExec ["JB_fnc_showBlackScreenMessage", _player];
+	};
+
+	if (count allPlayers >= SpecialOperations_MaxPlayers) exitWith
+	{
+		[ format ["Special operations is disabled while there are more than %1 players online", count allPlayers], 3] remoteExec ["JB_fnc_showBlackScreenMessage", _player];
 	};
 
 	private _cs = OO_GET(_soc,SpecialOperationsCommand,CriticalSection);

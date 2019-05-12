@@ -46,6 +46,22 @@ private _location = 0;
 	_x setMarkerAlpha 0;
 } forEach (allMapMarkers select { _x find "LOCATION_" == 0 });
 
+// Delete any group that stays empty across two checks (10-20 seconds)
+[] spawn
+{
+	private _previouslyEmptyGroups = [];
+	private _currentlyEmptyGroups = [];
+
+	while { true } do
+	{
+		_currentlyEmptyGroups = [];
+		{ if (_x in _previouslyEmptyGroups) then { deleteGroup _x } else { _currentlyEmptyGroups pushBack _x } } forEach (allGroups select { count units _x == 0 });
+		_previouslyEmptyGroups = _currentlyEmptyGroups;
+
+		sleep 10;
+	};
+};
+
 [] call compile preprocessFile ("scripts\configure" + worldName + "Server.sqf"); // Island-specific modifications
 [] call compile preprocessFile "scripts\weatherInit.sqf"; // Variable weather
 
@@ -53,6 +69,7 @@ private _location = 0;
 
 SpecialOperations_RunState = ["stop", "run"] select (["SpecialOperations"] call JB_MP_GetParamValue);
 [] execVM "mission\SpecialOperations\missionControl.sqf";
+SpecialOperations_MaxPlayers = 15;
 
 // Delete missions when appropriate
 [] execVM "mission\missionMonitor.sqf";

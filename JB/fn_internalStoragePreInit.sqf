@@ -1,6 +1,7 @@
 #include "..\OO\oo.h"
 
 JB_IS_C_CONTAINER_OBJECTFILTER = 0;
+JB_IS_C_CONTAINER_CANUNLOAD = 1;
 
 JB_IS_IsContainer =
 {
@@ -64,81 +65,86 @@ JB_IS_LoadSetUserActionText =
 {
 	params ["_item", "_container"];
 
-	player setUserActionText [JB_IS_LoadAction, format ["Load %1 into %2", getText (configFile >> "CfgVehicles" >> typeOf _item >> "displayName"), getText (configFile >> "CfgVehicles" >> typeOf _container >> "displayName")]];
+	private _action = "Load";
+
+	private _data = _container getVariable ["JB_IS_ClientData", []];
+	if (not (_data select JB_IS_C_CONTAINER_CANUNLOAD)) then { _action = "Discard" };
+
+	player setUserActionText [JB_IS_LoadAction, format ["%1 %2 into %3", _action, getText (configFile >> "CfgVehicles" >> typeOf _item >> "displayName"), getText (configFile >> "CfgVehicles" >> typeOf _container >> "displayName")]];
 };
 
 // Can the player's carried object be loaded into the cursorObject?
-JB_IS_LoadConditionCarried =
+JB_IS_LoadCarriedCondition =
 {
-	params ["_carriedObject"];
+	params ["_target", "_carriedObject"];
 
-	if (not ([cursorObject] call JB_IS_IsContainer)) exitWith { false };
+	if (not ([_target] call JB_IS_IsContainer)) exitWith { false };
 
-	if (player distance cursorObject > (sizeOf typeOf cursorObject) / 2.0) exitWith { false };
-
-	[_carriedObject, cursorObject] call JB_IS_LoadSetUserActionText;
+	[_carriedObject, _target] call JB_IS_LoadSetUserActionText;
 
 	true
 };
 
 // Can the cursorObject can be loaded into a nearby container?
-JB_IS_LoadConditionNearby =
+JB_IS_LoadNearbyCondition =
 {
-	if (getCursorObjectParams select 2 > 2.0) exitWith { false };
+	params ["_target"];
 
-	if (not ([cursorObject, player] call JB_CO_ObjectCanBeCarried)) exitWith { false };
+	if (not ([_target, player] call JB_CO_ObjectCanBeCarried)) exitWith { false };
 
 	private _nearestContainer = [ASLtoAGL eyePos player, 5.0] call JB_IS_GetNearestContainer;
 
 	if (isNull _nearestContainer) exitWith { false };
 
-	[cursorObject, _nearestContainer] call JB_IS_LoadSetUserActionText;
+	[_target, _nearestContainer] call JB_IS_LoadSetUserActionText;
 
 	true
 };
 
 JB_IS_LoadCondition =
 {
+	params ["_target"];
+
 	if (vehicle player != player) exitWith { false };
 	
 	if (not (lifeState player in ["HEALTHY", "INJURED"])) exitWith { false };
 
-	if (isNull cursorObject) exitWith { false };
-
-	if (cursorObjectParams select 2 > 2.0) exitWith { false };
+	if (isNull _target) exitWith { false };
 
 	private _carriedObject = [player] call JB_CO_CarriedObject;
-	if (isNull _carriedObject) exitWith { [] call JB_IS_LoadConditionNearby };
+	if (isNull _carriedObject) exitWith { [_target] call JB_IS_LoadNearbyCondition };
 
-	[_carriedObject] call JB_IS_LoadConditionCarried
+	[_target, _carriedObject] call JB_IS_LoadCarriedCondition
 };
 
 OO_TRACE_DECL(JB_IS_Load) =
 {
+	params ["_target"];
+
 	private _carriedObject = [player] call JB_CO_CarriedObject;
 
 	if (not isNull _carriedObject) exitWith
 	{
-		if (not ([cursorObject, typeOf _carriedObject] call JB_IS_ContainerCanStoreObjectType)) then
+		if (not ([_target, typeOf _carriedObject] call JB_IS_ContainerCanStoreObjectType)) then
 		{
-			titleText [format ["The %1 will not accept a %2", getText (configFile >> "CfgVehicles" >> typeOf cursorObject >> "displayName"), getText (configFile >> "CfgVehicles" >> typeOf _carriedObject >> "displayName")], "plain down", 0.3];
+			titleText [format ["The %1 will not accept a %2", getText (configFile >> "CfgVehicles" >> typeOf _target >> "displayName"), getText (configFile >> "CfgVehicles" >> typeOf _carriedObject >> "displayName")], "plain down", 0.3];
 		}
 		else
 		{
 			[] call JB_CO_DropAction;
-			[cursorObject, _carriedObject] remoteExec ["JB_IS_S_PushObject", 2]
+			[_target, _carriedObject] remoteExec ["JB_IS_S_PushObject", 2]
 		};
 	};
 
 	private _nearestContainer = [ASLtoAGL eyePos player, 5.0] call JB_IS_GetNearestContainer;
 
-	if (not ([_nearestContainer, typeOf cursorObject] call JB_IS_ContainerCanStoreObjectType)) then
+	if (not ([_nearestContainer, typeOf _target] call JB_IS_ContainerCanStoreObjectType)) then
 	{
-		titleText [format ["The %1 will not accept a %2", getText (configFile >> "CfgVehicles" >> typeOf _nearestContainer >> "displayName"), getText (configFile >> "CfgVehicles" >> typeOf cursorObject >> "displayName")], "plain down", 0.3];
+		titleText [format ["The %1 will not accept a %2", getText (configFile >> "CfgVehicles" >> typeOf _nearestContainer >> "displayName"), getText (configFile >> "CfgVehicles" >> typeOf _target >> "displayName")], "plain down", 0.3];
 	}
 	else
 	{
-		[_nearestContainer, cursorObject] remoteExec ["JB_IS_S_PushObject", 2];
+		[_nearestContainer, _target] remoteExec ["JB_IS_S_PushObject", 2];
 	};
 };
 
@@ -154,26 +160,31 @@ OO_TRACE_DECL(JB_IS_C_PickUpObject) =
 
 JB_IS_UnloadCondition =
 {
+	params ["_target"];
+
+	if (isNull _target) exitWith { false };
+
 	if (vehicle player != player) exitWith { false };
 	
 	if (not (lifeState player in ["HEALTHY", "INJURED"])) exitWith { false };
 
-	if (isNull cursorObject) exitWith { false };
+	if (not ([_target] call JB_IS_IsContainer)) exitWith { false };
 
-	if (getCursorObjectParams select 2 > 2.0) exitWith { false };
-
-	if (not ([cursorObject] call JB_IS_IsContainer)) exitWith { false };
+	private _data = _target getVariable ["JB_IS_ClientData", []];
+	if (not (_data select JB_IS_C_CONTAINER_CANUNLOAD)) exitWith { false };
 
 	if (not isNull ([player] call JB_CO_CarriedObject)) exitWith { false };
 
 	//TODO: Have the server functions update a global variable on the container giving the type of the object which would be popped.  Reference that here.
-	player setUserActionText [JB_IS_UnloadAction, format ["Unload from %1", getText (configFile >> "CfgVehicles" >> typeOf cursorObject >> "displayName")]];
+	player setUserActionText [JB_IS_UnloadAction, format ["Unload from %1", getText (configFile >> "CfgVehicles" >> typeOf _target >> "displayName")]];
 	
 	true
 };
 
 OO_TRACE_DECL(JB_IS_Unload) =
 {
+	params ["_target"];
+
 	// Switch to no weapon
 	switch ([animationState player, "P"] call JB_fnc_getAnimationState) do
 	{
@@ -184,7 +195,7 @@ OO_TRACE_DECL(JB_IS_Unload) =
 	player action ["switchweapon", player, player, -1];
 	waitUntil { ([animationState player, "W"] call JB_fnc_getAnimationState) == "non" };
 
-	[cursorObject, getPos player] remoteExec ["JB_IS_S_PopObject", 2];
+	[_target, getPos player] remoteExec ["JB_IS_S_PopObject", 2];
 };
 
 OO_TRACE_DECL(JB_IS_DeleteAllObjects) =
@@ -233,6 +244,7 @@ OO_TRACE_DECL(JB_IS_S_InitContainer) =
 
 	_data = [];
 	_data set [JB_IS_C_CONTAINER_OBJECTFILTER, _objectFilter];
+	_data set [JB_IS_C_CONTAINER_CANUNLOAD, _volume > 0];
 
 	_container setVariable ["JB_IS_ClientData", _data, true];
 };
@@ -248,29 +260,37 @@ OO_TRACE_DECL(JB_IS_S_PushObject) =
 
 	(_data select JB_IS_S_CONTAINER_CS) call JB_fnc_criticalSectionEnter;
 
-		if ((_data select JB_IS_S_CONTAINER_ALLOCATEDVOLUME) + _objectVolume <= _data select JB_IS_S_CONTAINER_TOTALVOLUME) then
+		switch (true) do
 		{
-			_data set [JB_IS_S_CONTAINER_ALLOCATEDVOLUME, (_data select JB_IS_S_CONTAINER_ALLOCATEDVOLUME) + _objectVolume];
-
-			if (_object isEqualType []) then // Direct push of a collapsible object
+			case (_data select JB_IS_S_CONTAINER_TOTALVOLUME == -1):
 			{
-				(_data select JB_IS_S_CONTAINER_CONTENTS) pushBack _object; // [type-name, object-init, simple-object]
-			}
-			else
-			{
-				_object enableSimulationGlobal false;
-				_object hideObjectGlobal true;
+				deleteVehicle _object;
+			};
 
-				private _objectInit = _object getVariable "JB_IS_S_OBJECT_INIT";
-				if (not isNil "_objectInit") then // Collapsible object
+			case ((_data select JB_IS_S_CONTAINER_ALLOCATEDVOLUME) + _objectVolume <= _data select JB_IS_S_CONTAINER_TOTALVOLUME):
+			{
+				_data set [JB_IS_S_CONTAINER_ALLOCATEDVOLUME, (_data select JB_IS_S_CONTAINER_ALLOCATEDVOLUME) + _objectVolume];
+
+				if (_object isEqualType []) then // Direct push of a collapsible object
 				{
-					(_data select JB_IS_S_CONTAINER_CONTENTS) pushBack [typeOf _object, _objectInit, isSimpleObject _object];
-					deleteVehicle _object;
+					(_data select JB_IS_S_CONTAINER_CONTENTS) pushBack _object; // [type-name, object-init, simple-object]
 				}
 				else
 				{
-					(_data select JB_IS_S_CONTAINER_CONTENTS) pushBack _object;
-					_object setpos [-10000 + random 10000, -10000 + random 10000, random 10000];
+					_object enableSimulationGlobal false;
+					_object hideObjectGlobal true;
+
+					private _objectInit = _object getVariable "JB_IS_S_OBJECT_INIT";
+					if (not isNil "_objectInit") then // Collapsible object
+					{
+						(_data select JB_IS_S_CONTAINER_CONTENTS) pushBack [typeOf _object, _objectInit, isSimpleObject _object];
+						deleteVehicle _object;
+					}
+					else
+					{
+						(_data select JB_IS_S_CONTAINER_CONTENTS) pushBack _object;
+						_object setpos [-10000 + random 10000, -10000 + random 10000, random 10000];
+					};
 				};
 			};
 		};

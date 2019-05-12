@@ -281,7 +281,7 @@ OO_TRACE_DECL(SPM_Mortar_Update) =
 				}
 				else
 				{
-					private _mortar = [_mortarType, _position, 0] call SPM_fnc_spawnVehicle;
+					private _mortar = [_mortarType, _position, 0, ""] call SPM_fnc_spawnVehicle;
 					[_category, _mortar] call OO_GET(_category,Category,InitializeObject);
 
 					private _mortarUnit = [_mortar, _group] call OO_CREATE(MortarUnit);

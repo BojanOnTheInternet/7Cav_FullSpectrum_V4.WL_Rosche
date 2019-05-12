@@ -60,11 +60,13 @@ OO_TRACE_DECL(SPM_Util_SurrenderVehicle) =
 
 	if (not alive _vehicle) exitWith {};
 
+	if ({ alive _x } count crew _vehicle == 0) exitWith {};
+
 	if (_vehicle isKindOf "Tank" || _vehicle isKindOf "Car") then
 	{
 		_vehicle forceFlagTexture "\A3\Data_F\Flags\Flag_white_CO.paa";
 	};
-
+/*
 	{
 		_vehicle removeMagazineTurret [_x select 0, _x select 1];
 	} forEach magazinesAllTurrets _vehicle;
@@ -73,7 +75,7 @@ OO_TRACE_DECL(SPM_Util_SurrenderVehicle) =
 	{
 		_vehicle setFuel 0.0;
 	};
-
+*/
 	{
 		[_x] call SPM_Util_SurrenderMan;
 	} forEach crew _vehicle;
@@ -109,7 +111,7 @@ OO_TRACE_DECL(SPM_C_Util_SurrenderMan_Surrender) =
 	_man addAction ["Secure prisoner", { deleteVehicle (_this select 0) }, nil, 10, true, true, "", "vehicle _this == _this && alive _target", 2];
 };
 
-SPM_C_Util_SurrenderMan_DestroyLoadedMagazines =
+SPM_C_Util_SurrenderMan_DestroyPlayerLoadedMagazines =
 {
 	params ["_personalWeapon"];
 
@@ -1002,6 +1004,8 @@ OO_TRACE_DECL(SPM_Util_ExcludeSamplesVisibleToViewers) =
 {
 	params ["_positions", "_radius", "_viewers", "_excludedPositions"];
 
+	if (count _viewers == 0) exitWith {};
+
 	private _saveFilteredPositions = not isNil "_excludedPositions";
 
 	private _position = [];
@@ -1355,7 +1359,7 @@ OO_TRACE_DECL(SPM_Util_CreateFlagpole) =
 	private _flagpolePosition = [_positions, _center] call SPM_Util_ClosestPosition;
 	private _flagpoleDirection = [_flagpolePosition, 0] call SPM_Util_EnvironmentAlignedDirection;
 
-	private _flagpole = [_flag, _flagpolePosition, _flagpoleDirection, "can_collide"] call SPM_fnc_spawnVehicle;
+	private _flagpole = [_flag, _flagpolePosition, _flagpoleDirection] call SPM_fnc_spawnVehicle;
 	_flagpole setVectorUp [0,0,1];  // Will rotate around the origin of the object, which is usually in its middle
 	_flagpole allowDamage false;
 
@@ -1398,6 +1402,8 @@ OO_TRACE_DECL(SPM_Util_PromoteMemberToOfficer) =
 
 	private _descriptor = [[_appearanceType]] call SPM_fnc_groupFromClasses;
 	private _replacementGroup = [_descriptor select 0, _descriptor select 1, getPosATL _member, getDir _member, false] call SPM_fnc_spawnGroup;
+	[_garrison, _replacementGroup] call OO_GET(_category,Category,InitializeObject);
+
 	private _replacementMember = leader _replacementGroup;
 	private _replacementForceUnit = [_replacementMember, [_replacementMember]] call OO_CREATE(ForceUnit);
 
@@ -1467,18 +1473,29 @@ OO_TRACE_DECL(SPM_Util_IsUrbanEnvironment) =
 	count _buildings > _area * 0.0005
 };
 
-// Figure out the direction of the closest fence, wall or house.  Returns _default if no context for direction
+// Figure out the direction of the closest house.  If nothing, then the closest fence or wall.  Returns _default if no context for direction,
 OO_TRACE_DECL(SPM_Util_EnvironmentAlignedDirection) =
 {
 	params ["_position", "_default", ["_radius", 20, [0]]];
 
-	private _objects = (nearestTerrainObjects [_position, ["fence", "wall", "house"], _radius]) apply { [(_position distance _x) - sizeOf typeOf _x, _x] };
+	private _objects = (_position nearObjects ["NonStrategic", _radius]) apply { [_position distance _x, getDir _x] };
+	_objects append ((_position nearRoads _radius) apply { [_position distance _x, _x getDir ((roadsConnectedTo _x) select 0)] });
 
-	if (count _objects == 0) exitWith { if (isNil "_default") then { nil } else { _default } };
+	if (count _objects > 0) exitWith
+	{
+		_objects sort true;
+		_objects select 0 select 1;
+	};
 
-	_objects sort true;
+	private _objects = ((nearestTerrainObjects [_position, ["wall"], _radius]) apply { [_position distance _x, getDir _x] });
 
-	getDir (_objects select 0 select 1);
+	if (count _objects > 0) exitWith
+	{
+		_objects sort true;
+		_objects select 0 select 1;
+	};
+
+	if (isNil "_default") then { nil } else { _default }
 };
 
 OO_TRACE_DECL(SPM_Util_FireTurretWeapon) =
@@ -1548,9 +1565,11 @@ SPM_Util_SurrenderMan_Killed =
 {
 	params ["_unit", "_killer", "_instigator"];
 
+	if (not isPlayer _instigator) exitWith {};
+
 	if (_instigator == _unit) exitWith {};
 
-	[_instigator == _killer] remoteExec ["SPM_C_Util_SurrenderMan_DestroyLoadedMagazines", _instigator];
+	[_instigator == _killer] remoteExec ["SPM_C_Util_SurrenderMan_DestroyPlayerLoadedMagazines", _instigator];
 };
 
 SPM_Util_SurrenderMan_Functions = ["target", "autotarget", "autocombat", "cover"];
@@ -1559,7 +1578,7 @@ OO_TRACE_DECL(SPM_Util_SurrenderMan) =
 {
 	params ["_man"];
 
-	if (captive _man) exitWith {};
+	if (captive _man || isPlayer _man) exitWith {};
 
 	_man setCaptive true;
 	{ _man disableAI _x } forEach SPM_Util_SurrenderMan_Functions;
@@ -1634,25 +1653,5 @@ OO_TRACE_DECL(SPM_Util_Surrender) =
 				[(_men deleteAt 0) select 1] call SPM_Util_SurrenderMan;
 			};
 		};
-	};
-};
-
-//TODO: Not clear if this is necessary, but we pile up a lot of empty groups because we delete only units.  Does ARMA clean up empty groups?  Will it sacrifice
-// an empty group when at the group limit and a new group is requested?
-
-[] spawn
-{
-	scriptName "SPM_Util_DeleteEmptyGroups";
-
-	while { true } do
-	{
-		{ 
-			if (count units _x == 0) then 
-			{ 
-				deleteGroup _x; 
-			}; 
-		} forEach allGroups;
-
-		sleep 20;
 	};
 };

@@ -35,8 +35,10 @@ if (not ([_vehicle] call JB_RV_HasRespawnParameters)) then
 else
 {
 	private _parameters = [_vehicle] call JB_RV_GetRespawnParameters;
-	private _position = _parameters select 2;
-	private _direction = _parameters select 3;
+	private _originalState = _parameters select 3;
+
+	private _position = _originalState select JB_RV_STATE_POSITION;
+	private _direction = _originalState select JB_RV_STATE_DIRECTION;
 
 	// Move to limbo, rotate to correct orientation, move to correct location
 

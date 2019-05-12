@@ -238,6 +238,8 @@ SERVER_Ammo_Aircraft =
 	["SmokeLauncherMag_boat", 2]
 ];
 
+//IMPORTANT: A curator should be the very first object in the mission so that it gets initialized and its initializer can
+// set the value of SERVER_CuratorMaster.
 SERVER_CuratorMaster = objNull;
 SERVER_MissionControllers = [];
 SERVER_MilitaryPolice = [];
@@ -249,7 +251,7 @@ OO_TRACE_DECL(SERVER_DeleteWeaponHolders) =
 
 	{
 		deleteVehicle _x;
-	} forEach (nearestObjects [_center, ["WeaponHolder"], _a max _b]) inAreaArray [_center, _a, _b, _angle, _isRectangle, _c];
+	} forEach (nearestObjects [_center, ["WeaponHolder"], sqrt (_a*_a + _b*_b)]) inAreaArray [_center, _a, _b, _angle, _isRectangle, _c];
 };
 
 OO_TRACE_DECL(SERVER_DeleteDeadBodies) =
@@ -276,11 +278,11 @@ OO_TRACE_DECL(SERVER_CurateEditableObjects) =
 	};
 
 	SERVER_CuratorMaster addCuratorEditableObjects [_objects, false];
-	{
+	{	
 		_x addCuratorEditableObjects [_objects, false];
 	} forEach SERVER_MissionControllers;
 	{
-		_x addCuratorEditableObjects [_objects, false];
+		_x addCuratorEditableObjects [_objects select { isPlayer _x }, false];
 	} forEach SERVER_MilitaryPolice;
 };
 
@@ -332,7 +334,7 @@ OO_TRACE_DECL(SERVER_CuratorType) =
 	private _curatorTypeByID = "";
 	private _curatorTypeByRole = "";
 
-	_curatorTypeByID = [getPlayerUID _player] call compile preprocessFile "scripts\curatorTypeBySteamID.sqf";
+	_curatorTypeByID = [getPlayerUID _player] call CLIENT_fnc_curatorTypeBySteamID;
 	if (_curatorTypeByID == "DD") exitWith { "MC" };
 
 	switch (_scheme) do
@@ -344,12 +346,12 @@ OO_TRACE_DECL(SERVER_CuratorType) =
 		
 		case 1: // Role
 		{
-			_curatorType = [roleDescription _player] call compile preprocessFile "scripts\curatorTypeByRole.sqf";
+			_curatorType = [roleDescription _player] call CLIENT_fnc_curatorTypeByRole;
 		};
 		
 		case 2: // Role and Steam ID
 		{
-			_curatorTypeByRole = [roleDescription _player] call compile preprocessFile "scripts\curatorTypeByRole.sqf";
+			_curatorTypeByRole = [roleDescription _player] call CLIENT_fnc_curatorTypeByRole;
 
 			if (_curatorTypeByID == "MC" && _curatorTypeByRole == "MC") exitWith { _curatorType = "MC" };
 			if (_curatorTypeByID in ["MC", "MP"] && _curatorTypeByRole in ["MC", "MP"]) exitWith { _curatorType = "MP" };
@@ -358,8 +360,7 @@ OO_TRACE_DECL(SERVER_CuratorType) =
 		
 		case 3: // Role or Steam ID
 		{
-			_curatorTypeByID = [getPlayerUID _player] call compile preprocessFile "scripts\curatorTypeBySteamID.sqf";
-			_curatorTypeByRole = [roleDescription _player] call compile preprocessFile "scripts\curatorTypeByRole.sqf";
+			_curatorTypeByRole = [roleDescription _player] call CLIENT_fnc_curatorTypeByRole;
 
 			if (_curatorTypeByID == "MC" || _curatorTypeByRole == "MC") exitWith { _curatorType = "MC" };
 			if (_curatorTypeByID == "MP" || _curatorTypeByRole == "MP") exitWith { _curatorType = "MP" };
@@ -368,7 +369,7 @@ OO_TRACE_DECL(SERVER_CuratorType) =
 
 		case 4: // Per-slot scheme
 		{
-			_scheme = [roleDescription _player] call compile preprocessFile "scripts\curatorSchemeByRole.sqf";
+			_scheme = [roleDescription _player] call CLIENT_fnc_curatorSchemeByRole;
 			if (_scheme in [0,1,2,3]) then { _curatorType = [_player, _scheme] call SERVER_CuratorType };
 		};
 	};
@@ -387,7 +388,7 @@ OO_TRACE_DECL(SERVER_CuratorAssign) =
 	private _scheme = ["CuratorTypeScheme"] call JB_MP_GetParamValue;
 	private _curatorType = [_player, _scheme] call SERVER_CuratorType;
 
-	private _requirements = [roleDescription _player] call compile preprocessFile "scripts\curatorTypeRoleRequirements.sqf";
+	private _requirements = [roleDescription _player] call CLIENT_fnc_curatorTypeRoleRequirements;
 
 	if (not (_curatorType in _requirements)) exitWith { [_requirements] remoteExec ["SPM_C_CuratorRequirementsNotMet", _player] };
 
@@ -417,7 +418,7 @@ OO_TRACE_DECL(SERVER_CuratorAssign) =
 
 			case "MP":
 			{
-				_curator addCuratorEditableObjects [curatorEditableObjects SERVER_CuratorMaster, false];
+				_curator addCuratorEditableObjects [(curatorEditableObjects SERVER_CuratorMaster) select { isPlayer _x }, false];
 
 				SERVER_MilitaryPolice pushBackUnique _curator;
 			};
@@ -813,6 +814,8 @@ OO_TRACE_DECL(SERVER_COMMAND_MP__Safety) =
 	[_commandWords select [1, 1e3]] call (_command select 1);
 };
 
+SERVER_COMMAND_AllLocations = [];
+
 OO_TRACE_DECL(SERVER_COMMAND_MP__Teleport) =
 {
 	params ["_commandWords"];
@@ -868,7 +871,7 @@ OO_TRACE_DECL(SERVER_COMMAND_MP__Teleport) =
 		case "player":
 		{
 			private _destinationPlayer = [_destinationName] call SERVER_COMMAND_MP_GetPlayerByName;
-			if (not isNull _destinationPlayer) then { _destination = getPosATL _destinationPlayer };
+			if (not isNull _destinationPlayer) then { _destination = getPosASL _destinationPlayer };
 		};
 
 		case "marker":
@@ -895,8 +898,8 @@ OO_TRACE_DECL(SERVER_COMMAND_MP__Teleport) =
 		case "location":
 		{
 			_dropAtDestination = true;
-			private _locations = nearestLocations [[worldSize / 2, worldSize / 2, 0], ["NameCityCapital", "NameCity", "NameVillage", "NameMarine", "NameLocal", "Mount", "Hill"], worldSize / 2 * 1.4];
-			_locations = _locations select { (toLower text _x) find _destinationName >= 0 };
+			if (count SERVER_COMMAND_AllLocations == 0) then { SERVER_COMMAND_AllLocations = nearestLocations [[worldSize / 2, worldSize / 2, 0], ["NameCityCapital", "NameCity", "NameVillage", "NameMarine", "NameLocal", "Mount", "Hill"], worldSize / 2 * 1.4] };
+			private _locations = SERVER_COMMAND_AllLocations select { (toLower text _x) find _destinationName >= 0 };
 			if (count _locations > 1) then
 			{
 				_locations = _locations select { (toLower text _x) == _destinationName }; // Exact name
@@ -943,9 +946,10 @@ OO_TRACE_DECL(SERVER_COMMAND_MP__Teleport) =
 	if (_dropAtDestination) then
 	{
 		private _destinationASL = AGLtoASL _destination;
-		private _intersections = lineIntersectsSurfaces [_destinationASL vectorAdd [0,0,30], _destinationASL, objNull, objNull, true, -1];
-		_intersections = _intersections select { typeof (_x select 3) != "" || { ((getModelInfo (_x select 3)) select 1) find "a3\plants_f" == -1 } } apply { _x select 0 }; // Ignore simple objects that come from the plants PBO
-		if (count _intersections > 0) then { _destination = ASLtoAGL (_intersections select 0) };
+		private _intersections = lineIntersectsSurfaces [_destinationASL vectorAdd [0,0,30], _destinationASL vectorAdd [0,0,-1], objNull, objNull, true, -1];
+		_intersections = _intersections select { not ((_x select 3) isKindOf "Man") }; // Ignore intersections that contact a person
+		_intersections = _intersections select { isNull (_x select 3) || { typeof (_x select 3) != "" } || { ((getModelInfo (_x select 3)) select 1) find "a3\plants_f" == -1 } }; // Terrain, full objects (e.g. buildings), or simple objects that aren't plants (e.g. walls)
+		if (count _intersections > 0) then { _destination = _intersections select 0 select 0 };
 	};
 
 	if (_sourceObject != _sourcePlayer) then
@@ -954,7 +958,7 @@ OO_TRACE_DECL(SERVER_COMMAND_MP__Teleport) =
 			if (isPlayer _x) then { ["An MP is teleporting you...", 3] remoteExec ["JB_fnc_showBlackScreenMessage", _x] };
 		} forEach ((crew _sourceObject) - [_sourcePlayer]);
 	};
-	[[_sourceObject, _destination, _direction], { ["An MP is teleporting you...", 3] call JB_fnc_showBlackScreenMessage; sleep 2; (_this select 0) setPos ((_this select 1) vectorAdd [0,0,100]); (_this select 0) setDir (_this select 2); (_this select 0) setPos (_this select 1) }] remoteExec ["spawn", _sourcePlayer];
+	[[_sourceObject, _destination, _direction], { ["An MP is teleporting you...", 3] call JB_fnc_showBlackScreenMessage; sleep 2; (_this select 0) setPosASL ((_this select 1) vectorAdd [0,0,100]); (_this select 0) setDir (_this select 2); (_this select 0) setPosASL (_this select 1) }] remoteExec ["spawn", _sourcePlayer];
 
 	[format ["Player '%1'%2 has been teleported to %3", name _sourcePlayer, if (_sourceObject != _sourcePlayer) then { "s vehicle" } else { "" }, (_destination select [0,2]) apply { round _x }]] call SPM_Util_MessageCaller;
 
@@ -1089,162 +1093,158 @@ OO_TRACE_DECL(SERVER_PlayerDisconnected) =
 	false
 };
 
+OO_TRACE_DECL(SERVER_Supply_PackContainer) =
+{
+	params ["_container", "_supplyTypes", "_capacity"];
+
+	if (count _supplyTypes == 0) exitWith { 0 };
+
+	private _oversizedTypes = [];
+	private _remainingCapacity = _capacity;
+	private _capacityPerType = 0;
+	private _supplyType = [];
+	private _count = 0;
+
+	while { true } do
+	{	
+		// Discard the largest type that won't fit into an equitable split, then try to split
+		// the available space again.  Repeat until we have no more types or the remaining types all fit.
+		while { count _supplyTypes > 0 } do
+		{
+			_capacityPerType = _remainingCapacity / count _supplyTypes;
+			_oversizedTypes = _supplyTypes select { _x select 0 > _capacityPerType };
+
+			// No oversized types, so we're good to continue
+			if (count _oversizedTypes == 0) exitWith {};
+
+			_oversizedTypes sort false;
+			_supplyTypes = _supplyTypes - [_oversizedTypes select 0];
+		};
+
+		// If no types remain, we're done
+		if (count _supplyTypes == 0) exitWith {};
+
+		_capacityPerType = _remainingCapacity / count _supplyTypes;
+
+		{
+			_supplyType = _x;
+			switch (_supplyType select 1) do
+			{
+				case "weapon":
+				{
+					_count = floor (_capacityPerType / (_supplyType select 0));
+					_container addWeaponCargoGlobal [_supplyType select 2, _count];
+					_remainingCapacity = _remainingCapacity - _count * (_supplyType select 0);
+				};
+
+				case "magazine":
+				{
+					_count = floor (_capacityPerType / (_supplyType select 0));
+					_container addMagazineCargoGlobal [_supplyType select 2, _count];
+					_remainingCapacity = _remainingCapacity - _count * (_supplyType select 0);
+				};
+
+				case "item":
+				{
+					_count = floor (_capacityPerType / (_supplyType select 0));
+					_container addItemCargoGlobal [_supplyType select 2, _count];
+					_remainingCapacity = _remainingCapacity - _count * (_supplyType select 0);
+				};
+
+				case "backpack":
+				{
+					_count = floor (_capacityPerType / (_supplyType select 0));
+					_container addBackpackCargoGlobal [_supplyType select 2, _count];
+					_remainingCapacity = _remainingCapacity - _count * (_supplyType select 0);
+				};
+			};
+		} forEach _supplyTypes;
+	};
+
+	_capacity - _remainingCapacity
+};
+
 OO_TRACE_DECL(SERVER_Supply_StockAmmunitionContainer) =
 {
-	params ["_container", "_capacity", "_clear"];
+	params ["_container", ["_capacity", -1, [0]], ["_clear", true, [true]]];
 
 	if (_clear) then
 	{
 		[_container] call JB_fnc_containerClear;
 	};
 
-	private _gear = [] call compile preprocessFile "scripts\arsenalGear.sqf";
-	private _magazineTypes = [(_gear select 0) + ["Put", "Throw"]] call compile preprocessFile "scripts\whitelistMagazines.sqf";
-	_magazineTypes = _magazineTypes select { _x find "Grenade" == -1 && _x find "Flare" == -1 };
+	if (_capacity == -1) then { _capacity = getNumber (configFile >> "CfgVehicles" >> typeOf _container >> "maximumLoad") };
 
-	_magazineTypes = _magazineTypes apply { [getText (configFile >> "CfgMagazines" >> _x >> "displayName"), _x] };
-	_magazineTypes sort true;
-	_magazineTypes = _magazineTypes apply { _x select 1 };
+	private _gear = [] call CLIENT_fnc_arsenalGear;
+	private _supplyTypes = [(_gear select 0) + ["Put", "Throw"]] call CLIENT_fnc_whitelistMagazines;
+	_supplyTypes = _supplyTypes select { _x find "Grenade" == -1 && _x find "Flare" == -1 };
 
-	private _allocations = count _magazineTypes + 6;
-	private _capacityPerType = _capacity / _allocations;
+	_supplyTypes = _supplyTypes apply { [getText (configFile >> "CfgMagazines" >> _x >> "displayName"), _x] };
+	_supplyTypes sort true;
+	_supplyTypes = _supplyTypes apply { [getNumber (configFile >> "CfgMagazines" >> (_x select 1) >> "mass"), "magazine", _x select 1] };
 
-	private _itemMass = 0;
 	{
-		_itemMass = getNumber (configFile >> "CfgMagazines" >> _x >> "mass");
-		_container addMagazineCargoGlobal [_x, floor (_capacityPerType / _itemMass)];
-	} forEach _magazineTypes;
+		_supplyTypes pushBack [getNumber (configFile >> "CfgWeapons" >> _x >> "ItemInfo" >> "mass"), "item", _x];
+	} forEach ["FirstAidKit"];
 
-	private _items = ["FirstAidKit"];
 	{
-		_itemMass = getNumber (configFile >> "CfgWeapons" >> _x >> "ItemInfo" >> "mass");
-		_container addItemCargoGlobal [_x, floor ((_capacityPerType / (count _items)) / _itemMass)];
-	} forEach _items;
+		_supplyTypes pushBack [getNumber (configFile >> "CfgMagazines" >> _x >> "mass"), "magazine", _x];
+	} forEach ["DemoCharge_Remote_Mag", "HandGrenade", "MiniGrenade", "1Rnd_HE_Grenade_shell", "3Rnd_HE_Grenade_shell", "SmokeShell", "1Rnd_Smoke_Grenade_shell", "3Rnd_Smoke_Grenade_shell", "UGL_FlareWhite_F", "3Rnd_UGL_FlareWhite_F"];
 
-	private _items = ["DemoCharge_Remote_Mag"];
-	{
-		_itemMass = getNumber (configFile >> "CfgMagazines" >> _x >> "mass");
-		_container addMagazineCargoGlobal [_x, floor ((_capacityPerType / (count _items)) / _itemMass)];
-	} forEach _items;
-
-	private _grenades = ["HandGrenade", "MiniGrenade", "1Rnd_HE_Grenade_shell", "3Rnd_HE_Grenade_shell"];
-	{
-		_itemMass = getNumber (configFile >> "CfgMagazines" >> _x >> "mass");
-		_container addMagazineCargoGlobal [_x, floor ((_capacityPerType * 2 / (count _grenades)) / _itemMass)];
-	} forEach _grenades;
-
-	private _grenades = ["SmokeShell", "1Rnd_Smoke_Grenade_shell", "3Rnd_Smoke_Grenade_shell"];
-	{
-		_itemMass = getNumber (configFile >> "CfgMagazines" >> _x >> "mass");
-		_container addMagazineCargoGlobal [_x, floor ((_capacityPerType / (count _grenades)) / _itemMass)];
-	} forEach _grenades;
-
-	private _grenades = ["UGL_FlareWhite_F", "3Rnd_UGL_FlareWhite_F"];
-	{
-		_itemMass = getNumber (configFile >> "CfgMagazines" >> _x >> "mass");
-		_container addMagazineCargoGlobal [_x, floor ((_capacityPerType / (count _grenades)) / _itemMass)];
-	} forEach _grenades;
+	[_container, _supplyTypes, _capacity] call SERVER_Supply_PackContainer;
 };
 
 OO_TRACE_DECL(SERVER_Supply_StockExplosivesContainer) =
 {
-	params ["_container", "_capacity", "_clear"];
+	params ["_container", ["_capacity", -1, [0]], ["_clear", true, [true]]];
 
 	if (_clear) then
 	{
 		[_container] call JB_fnc_containerClear;
 	};
 
-	private _explosiveTypes = [];
-	{
-		if (getText (_x >> "useActionTitle") find "Put" == 0) then { _explosiveTypes pushBack configName _x };
-	} forEach ("true" configClasses (configFile >> "CfgMagazines"));
-	
-	private _allocations = count _explosiveTypes;
-	private _capacityPerType = _capacity / _allocations;
+	if (_capacity == -1) then { _capacity = getNumber (configFile >> "CfgVehicles" >> typeOf _container >> "maximumLoad") };
 
-	private _itemMass = 0;
-	{
-		_itemMass = getNumber (configFile >> "CfgMagazines" >> _x >> "mass");
-		_container addMagazineCargoGlobal [_x, floor (_capacityPerType / _itemMass)];
-	} forEach _explosiveTypes;
+	private _supplyTypes = [["Put"]] call CLIENT_fnc_whitelistMagazines;
+	_supplyTypes = _supplyTypes apply { [getText (configFile >> "CfgMagazines" >> _x >> "displayName"), _x] };
+	_supplyTypes sort true;
+	_supplyTypes = _supplyTypes apply { [getNumber (configFile >> "CfgMagazines" >> (_x select 1) >> "mass"), "magazine", _x select 1] };
+
+	[_container, _supplyTypes, _capacity] call SERVER_Supply_PackContainer;
 };
 
 OO_TRACE_DECL(SERVER_Supply_StockWeaponsContainer) =
 {
-	params ["_container", "_capacity", "_clear"];
+	params ["_container", ["_capacity", -1, [0]], ["_clear", true, [true]]];
 
 	if (_clear) then
 	{
 		[_container] call JB_fnc_containerClear;
 	};
 
-	private _weaponTypes = ([] call compile preprocessFile "scripts\whitelistGear.sqf") select 0;
+	if (_capacity == -1) then { _capacity = getNumber (configFile >> "CfgVehicles" >> typeOf _container >> "maximumLoad") };
 
-	private _basicTypes = [];
-	{
-		private _weaponType = _x;
-		{
-			if (_weaponType != _x && _weaponType isKindOf [_x, configFile >> "CfgWeapons"]) exitWith { _weaponType = "" };
-		} forEach _weaponTypes;
-		if (_weaponType != "") then
-		{
-			_basicTypes pushBack _weaponType;
-		};
-	} forEach _weaponTypes;
+	private _type = "";
+	private _config = (configFile >> "CfgWeapons");
+	private _supplyTypes = ([] call CLIENT_fnc_arsenalGear) select 0;
+	_supplyTypes = _supplyTypes select { _type = _x; _supplyTypes findIf { _type != _x && { _type isKindOf [_x, _config] } } == -1 }; // Select weapons that are not a subclass of another weapon type
+	_supplyTypes = _supplyTypes apply { [getNumber (configFile >> "CfgWeapons" >> _x >> "WeaponSlotsInfo" >> "mass"), "weapon", _x] };
 
-	private _irrelevantParents = ["Rifle_Base_F", "Rifle", "RifleCore", "Launcher_Base_F", "Launcher", "LauncherCore", "Pistol_Base_F", "Pistol", "PistolCore", "Default"];
-	_basicTypes = _basicTypes apply
-		{
-			private _parents = ([configfile >> "CfgWeapons" >> _x, true] call BIS_fnc_returnParents) - _irrelevantParents;
-			[_parents deleteAt 0, _parents]
-		};
-
-	for "_i" from count _basicTypes - 1 to 0 step -1 do
-	{
-		private _parentsI = (_basicTypes select _i) select 1;
-		if (count _parentsI > 0) then
-		{
-			for "_j" from 0 to _i - 1 do
-			{
-				private _parentsJ = (_basicTypes select _j) select 1;
-				private _uniqueParents = _parentsI - _parentsJ;
-				if (count _uniqueParents == 0) exitWith
-				{
-					_basicTypes set [_i, []];
-				};
-			};
-		};
-	};
-
-	private _weaponMass = 0;
-
-	_basicTypes = _basicTypes apply
-	{
-		_weaponMass = getNumber (configFile >> "CfgWeapons" >> (_x select 0) >> "WeaponSlotsInfo" >> "mass");
-		if (isNil "_weaponMass" || { _weaponMass == 0 }) then { [] } else { [_x select 0, _weaponMass] }
-	};
-
-	_basicTypes = _basicTypes select { count _x > 0 };
-
-	private _allocations = count _basicTypes;
-	private _capacityPerType = _capacity / _allocations;
-
-	{
-		_container addWeaponCargoGlobal [_x select 0, (floor (_capacityPerType / (_x select 1))) max 1];
-	} forEach _basicTypes;
+	[_container, _supplyTypes, _capacity] call SERVER_Supply_PackContainer;
 };
 
 OO_TRACE_DECL(SERVER_Supply_StockStaticWeaponsContainer) =
 {
-	params ["_container", "_capacity", "_clear"];
+	params ["_container", ["_capacity", -1, [0]], ["_clear", true, [true]]];
 
 	if (_clear) then
 	{
 		[_container] call JB_fnc_containerClear;
 	};
 
-	private _backpackTypes = ([] call compile preprocessFile "scripts\whitelistGear.sqf") select 1;
+	if (_capacity == -1) then { _capacity = getNumber (configFile >> "CfgVehicles" >> typeOf _container >> "maximumLoad") };
+
+	private _backpackTypes = ([] call CLIENT_fnc_whitelistGear) select 1;
 	
 	private _weaponTypes = _backpackTypes select { getText (configFile >> "CfgVehicles" >> _x >> "assembleInfo" >> "assembleTo") != "" && { toLower (getText (configFile >> "CfgVehicles" >> _x >> "displayName")) find "mortar" == -1 } };
 
@@ -1258,62 +1258,49 @@ OO_TRACE_DECL(SERVER_Supply_StockStaticWeaponsContainer) =
 		} forEach _x;
 	} forEach _componentTypes;
 
-	private _allocations = count _staticTypes;
-	private _capacityPerType = _capacity / _allocations;
+	private _supplyTypes = _staticTypes apply { [getNumber (configFile >> "CfgVehicles" >> _x >> "mass"), "backpack", _x] };
 
-	{
-		_backpackMass = getNumber (configFile >> "CfgVehicles" >> _x >> "mass");
-		_container addBackpackCargoGlobal [_x, (floor (_capacityPerType / _backpackMass)) max 1];
-	} forEach _staticTypes;
+	[_container, _supplyTypes, _capacity] call SERVER_Supply_PackContainer;
 };
 
 OO_TRACE_DECL(SERVER_Supply_StockMortarsContainer) =
 {
-	params ["_container", "_capacity", "_clear"];
+	params ["_container", ["_capacity", -1, [0]], ["_clear", true, [true]]];
 
 	if (_clear) then
 	{
 		[_container] call JB_fnc_containerClear;
 	};
 
-	private _backpackTypes = ([] call compile preprocessFile "scripts\whitelistGear.sqf") select 1;
+	if (_capacity == -1) then { _capacity = getNumber (configFile >> "CfgVehicles" >> typeOf _container >> "maximumLoad") };
+
+	private _backpackTypes = ([] call CLIENT_fnc_whitelistGear) select 1;
 	
 	private _mortarTypes = _backpackTypes select { toLower (getText (configFile >> "CfgVehicles" >> _x >> "displayName")) find "mortar" >= 0 };
 
-	_mortarTypes = _mortarTypes apply { [_x, getNumber (configFile >> "CfgVehicles" >> _x >> "mass")] };
+	private _supplyTypes = _mortarTypes apply { [getNumber (configFile >> "CfgVehicles" >> _x >> "mass"), "backpack", _x] };
 
-	private _index = 0;
-	while { _capacity > 0 } do
-	{
-		_container addBackpackCargoGlobal [_mortarTypes select _index select 0, 1];
-		_capacity = _capacity - (_mortarTypes select _index select 1);
-		_index = (_index + 1) mod (count _mortarTypes);
-	};
+	[_container, _supplyTypes, _capacity] call SERVER_Supply_PackContainer;
 };
 
 OO_TRACE_DECL(SERVER_Supply_StockItemsContainer) =
 {
-	params ["_container", "_capacity", "_clear"];
+	params ["_container", ["_capacity", -1, [0]], ["_clear", true, [true]]];
 
 	if (_clear) then
 	{
 		[_container] call JB_fnc_containerClear;
 	};
 
-	private _itemTypes = ([] call compile preprocessFile "scripts\whitelistGear.sqf") select 2;
+	if (_capacity == -1) then { _capacity = getNumber (configFile >> "CfgVehicles" >> typeOf _container >> "maximumLoad") };
+
+	private _itemTypes = ([] call CLIENT_fnc_whitelistGear) select 2;
 
 	_itemTypes = _itemTypes select { getText (configFile >> "CfgWeapons" >> _x >> "ItemInfo" >> "uniformModel") == "" && { getNumber (configFile >> "CfgWeapons" >> _x >> "ItemInfo" >> "mass") != 0 } };
+	
+	_supplyTypes = _itemTypes apply { [getNumber (configFile >> "CfgWeapons" >> _x >> "ItemInfo" >> "mass"), "item", _x] };
 
-	private _allocations = count _itemTypes;
-	private _capacityPerType = _capacity / _allocations;
-
-	{
-		_itemMass = getNumber (configFile >> "CfgWeapons" >> _x >> "ItemInfo" >> "mass");
-		if (_itemMass != 0) then
-		{
-			_container addItemCargoGlobal [_x, (floor (_capacityPerType / _itemMass)) max 1];
-		};
-	} forEach _itemTypes;
+	[_container, _supplyTypes, _capacity] call SERVER_Supply_PackContainer;
 };
 
 OO_TRACE_DECL(Base_Supply_Drop_AnnounceStockStart) =
@@ -1436,7 +1423,7 @@ SERVER_IsNightOperation =
 	(dayTime < _dawn) || (dayTime + 1.0 > _dusk)
 };
 
-// Name, min, default, max
+// Name, min, default, max.  Note that ARMA itself remaps these values again.  Most significantly, aimingSpeed's minimum possible value is 0.5
 SERVER_Skill_Default =
 [
 	["aimingAccuracy", 0.05, 0.20, 0.85],
@@ -1499,7 +1486,7 @@ OO_TRACE_DECL(SERVER_InitializeObject_Syndikat) =
 {
 	params ["_category", "_group"];
 
-	_group allowFleeing 0.5;
+	_group allowFleeing 0.2;
 
 	private _skillLevel = OO_GET(_category,ForceCategory,SkillLevel);
 
@@ -1524,14 +1511,17 @@ OO_TRACE_DECL(SERVER_InitializeObject_CSAT) =
 	{
 		[_x, _skillLevel] call SERVER_InitializeObject_SetSkill;
 
-		if (headgear _x == "LOP_U_US_Fatigue_01") then { removeHeadgear _x; _x addHeadgear "LOP_H_6B27M_Skol" }; // Drop the Armor V helmets to Armor III
-
 		[_x, "AAF_1stRegiment"] call BIS_fnc_setUnitInsignia;
 
 		_x enableFatigue false;
+
 		_x unassignItem "NVGoggles_OPFOR";
 		_x removeItem "NVGoggles_OPFOR";
+
 		_x addPrimaryWeaponItem "acc_flashlight";
+
+		if (headgear _x == "LOP_U_US_Fatigue_01") then { removeHeadgear _x; _x addHeadgear "LOP_H_6B27M_Skol" }; // Drop the Armor V helmets to Armor III
+
 	} forEach units _group;
 
 	if (OO_INSTANCE_ISOFCLASS(_category,InfantryGarrisonCategory) && { OO_GET(_category,InfantryGarrisonCategory,IsUrbanEnvironment) }) then
@@ -1541,13 +1531,19 @@ OO_TRACE_DECL(SERVER_InitializeObject_CSAT) =
 		{
 			_unit = _x;
 
-			_items = uniformItems _unit;
-			removeUniform _unit;
-			_unit addUniform "LOP_U_US_Fatigue_01";
-			{ _unit addItemToUniform _x } forEach _items;
+			if (uniform _x in ["U_O_CombatUniform_ocamo"]) then
+			{
+				_items = uniformItems _unit;
+				removeUniform _unit;
+				_unit addUniform "U_O_CombatUniform_oucamo";
+				{ _unit addItemToUniform _x } forEach _items;
+			};
 
-			if (headgear _unit == "H_HelmetO_ocamo") then { removeHeadgear _unit; _unit addHeadgear "LOP_H_6B27M_Skol" };
-			if (headgear _unit == "H_HelmetLeaderO_ocamo") then { removeHeadgear _unit; _unit addHeadgear "LOP_H_6B27M_Skol" };
+			if (headgear _x in ["H_ShemagOpen_tan"]) then
+			{
+				removeHeadgear _x;
+				_x addHeadgear "H_ShemagOpen_khk";
+			};
 		} forEach units _group;
 	};
 };
@@ -1560,99 +1556,112 @@ SERVER_VehicleLockFilter =
 	["APC_Wheeled_03_base_F", false],	// Gorgon
 	["O_MRAP_02_hmg_F", false],			// Ifrit
 	["O_LSV_02_armed_F", false],		// Qilin
-	["I_C_Offroad_02_LMG_F", false],	// Sydikat LMG Jeep
+	["I_C_Offroad_02_LMG_F", false],	// Syndikat LMG Jeep
+	["I_C_Offroad_02_AT_F", false],		// Syndikat AT Jeep
 	["O_HMG_01_high_F", false],			// Static HMG
 	["All", true]
 ];
 
-OO_TRACE_DECL(SERVER_InitializeObject) =
+OO_TRACE_DECL(SERVER_InitializeCategoryObject_Object) =
 {
 	params ["_category", "_object"];
 
-	if (_object isEqualType objNull) then
+	// Mark boxes created by this objective so that our EOD guys can pick them up
+	if (OO_INSTANCE_ISOFCLASS(_category,AmmoCachesCategory)) then
 	{
-		// Mark boxes created by this objective so that our EOD guys can pick them up
-		if (OO_INSTANCE_ISOFCLASS(_category,AmmoCachesCategory)) then
+		if ([_object] call JB_fnc_containerIsContainer) then
 		{
-			if ([_object] call JB_fnc_containerIsContainer) then
-			{
-				[_object, SERVER_AllowEODCarry, { [_this select 0] call JB_fnc_containerMass }] call JB_fnc_carryObjectInitObject;
-			}
-			else
-			{
-				[_object, SERVER_AllowEODCarry, { ([_this select 0] call JB_fnc_objectVolume) * 45 }] call JB_fnc_carryObjectInitObject; // Non-containers mass 45kg per cubic meter
-			};
-		};
-
-		[_object, SERVER_Magazines_TitanToRPG, SERVER_Weapons_LauncherDowngrade] call JB_fnc_containerSubstitute;
-
-		if ([typeOf _object, SERVER_VehicleLockFilter] call JB_fnc_passesTypeFilter) then
+			[_object, SERVER_AllowEODCarry, { ([_this select 0] call JB_fnc_containerMass) * MASS_TO_KG }] call JB_fnc_carryObjectInitObject;
+		}
+		else
 		{
-			_object setVehicleLock "lockedplayer";
+			[_object, SERVER_AllowEODCarry, { ([_this select 0] call JB_fnc_objectVolume) * 45 }] call JB_fnc_carryObjectInitObject; // Non-containers mass 45kg per cubic meter
 		};
+	};
 
+	// Make sure various weapons in containers are downgraded
+	if ([_object] call JB_fnc_containerIsContainer) then { [_object, SERVER_Magazines_TitanToRPG, SERVER_Weapons_LauncherDowngrade] call JB_fnc_containerSubstitute };
+
+	// Make sure vehicles are locked as appropriate
+	if ([typeOf _object, SERVER_VehicleLockFilter] call JB_fnc_passesTypeFilter) then { _object setVehicleLock "lockedplayer" };
+
+	switch (true) do
+	{
 		// Give Zamack transports the same inventory as an Ifrit
-		if (_object isKindOf "O_Truck_02_transport_F") then
-		{
-			[_object, "O_MRAP_02_F"] call JB_fnc_containerClone;
-		};
+		case (_object isKindOf "O_Truck_02_transport_F"): { [_object, "O_MRAP_02_F"] call JB_fnc_containerClone };
 
 		// Prevent disassembly of spawned static weapons
-		if (_object isKindOf "StaticWeapon") then
-		{
-			_object enableWeaponDisassembly false;
-		};
+		case (_object isKindOf "StaticWeapon"): { _object enableWeaponDisassembly false };
 
 		// Prevent air crews from ejecting
-		if (_object isKindOf "Air") then
+		case (_object isKindOf "Air"): { _object allowCrewInImmobile true };
+
+		// Put flags on all east and independent vehicles
+		default
 		{
-			_object allowCrewInImmobile true;
-		}
-		else
-		{
-			// Put flags on all east and independent vehicles
-			if (not (_object isKindOf "StaticWeapon")) then
+			switch (side effectiveCommander _object) do
 			{
-				private _side = sideUnknown;
-
-				if (not isNull effectiveCommander _object) then { _side = side effectiveCommander _object };
-				if (OO_INSTANCE_ISOFCLASS(_category,ForceCategory)) then { _side = OO_GET(_category,ForceCategory,SideEast) };
-
-				switch (_side) do
-				{
-					case east: { _object forceFlagTexture "\A3\Data_F\Flags\Flag_CSAT_CO.paa" };
-					case independent: { _object forceFlagTexture "a3\data_f_exp\flags\flag_synd_co.paa" };
-				};
+				case east: { _object forceFlagTexture "\A3\Data_F\Flags\Flag_CSAT_CO.paa" };
+				case independent: { _object forceFlagTexture "a3\data_f_exp\flags\flag_synd_co.paa" };
 			};
 		};
 	};
 
-	if (_object isEqualType grpNull) then
+	[[_object]] call SERVER_CurateEditableObjects;
+};
+
+OO_TRACE_DECL(SERVER_InitializeCategoryObject_Group) =
+{
+	params ["_category", "_group"];
+
+	if (OO_INSTANCE_ISOFCLASS(_category,InfantryGarrisonCategory) && { not OO_GET(_category,InfantryGarrisonCategory,InitialForceCreated) }) then
 	{
-		if (OO_INSTANCE_ISOFCLASS(_category,InfantryGarrisonCategory) && { not OO_GET(_category,InfantryGarrisonCategory,InitialForceCreated) }) then
-		{
-			_object setSpeedMode "limited";
-			_object setBehaviour "safe";
-			_object setCombatMode "white";
-		}
-		else
-		{
-			_object setSpeedMode "normal";
-			_object setBehaviour "aware";
-			_object setCombatMode "yellow";
-		};
-
-		{
-			if (toLower typeOf _x in ["LOP_US_Infantry_AT", "o_soldier_at_f", "o_soldier_aat_f"]) then { [_x, SERVER_Magazines_TitanToRPG, SERVER_Weapons_LauncherDowngrade] call JB_fnc_substituteEquipment };
-		} forEach units _object;
-
-		switch (side _object) do
-		{
-			case civilian : { [_category, _object] call SERVER_InitializeObject_Civilian };
-			case independent : { [_category, _object] call SERVER_InitializeObject_Syndikat };
-			case east : { [_category, _object] call SERVER_InitializeObject_CSAT };
-		};
+		_group setSpeedMode "limited";
+		_group setBehaviour "safe";
+		_group setCombatMode "white";
+	}
+	else
+	{
+		_group setSpeedMode "normal";
+		_group setBehaviour "aware";
+		_group setCombatMode "yellow";
 	};
+
+	{
+		if (toLower typeOf _x in ["o_soldier_lat_f", "o_soldier_at_f", "o_soldier_aat_f"]) then { [_x, SERVER_Magazines_TitanToRPG, SERVER_Weapons_LauncherDowngrade] call JB_fnc_substituteEquipment };
+
+		_x disableAI "minedetection";
+	} forEach units _group;
+
+	switch (side _group) do
+	{
+		case civilian : { [_category, _group] call SERVER_InitializeObject_Civilian };
+		case independent : { [_category, _group] call SERVER_InitializeObject_Syndikat };
+		case east : { [_category, _group] call SERVER_InitializeObject_CSAT };
+	};
+
+	[units _group] call SERVER_CurateEditableObjects;
+};
+
+OO_TRACE_DECL(SERVER_InitializeCategoryObject) =
+{
+	params ["_category", "_object"];
+
+	if (_object isEqualType objNull) exitWith { [_category, _object] call SERVER_InitializeCategoryObject_Object };
+
+	if (_object isEqualType grpNull) exitWith { [_category, _object] call SERVER_InitializeCategoryObject_Group };
+};
+
+OO_TRACE_DECL(SERVER_InitializeObject) =
+{
+	params ["_object"];
+
+	if (_object isEqualType objNull) exitWith
+	{
+		if (not (_object isKindOf "Static")) then { [[_object]] call SERVER_CurateEditableObjects };
+	};
+
+	if (_object isEqualType grpNull) exitWith { [[units _object]] call SERVER_CurateEditableObjects };
 };
 
 OO_TRACE_DECL(SERVER_Infantry_MakeSpecialForces) =
@@ -1662,17 +1671,15 @@ OO_TRACE_DECL(SERVER_Infantry_MakeSpecialForces) =
 	private _headgear = "";
 	switch (uniform leader _group) do
 	{
-		case "U_O_CombatUniform_ocamo": { _headgear = "H_ShemagOpen_khk" };
-		case "H_HelmetLeaderO_ocamo": { _headgear = "H_ShemagOpen_tan" };
+		case "U_O_CombatUniform_ocamo": { _headgear = "H_HelmetO_ocamo" };
+		case "U_O_CombatUniform_oucamo": { _headgear = "H_HelmetO_oucamo" };
 	};
 
 	{
 		removeBackpack _x;
-		if (_headgear != "") then
-		{
-			removeHeadgear _x;
-			_x addHeadgear _headgear;
-		};
+
+		removeHeadgear _x;
+		_x addHeadgear _headgear;
 		
 		[_x, "CSAT_ScimitarRegiment"] call BIS_fnc_setUnitInsignia;
 
@@ -1767,7 +1774,7 @@ OO_TRACE_DECL(SERVER_Huron_RampManager) =
 	{
 		params ["_vehicle"];
 
-		scriptName "spawnSERVER_Huron_RampManager";
+		scriptName "SERVER_Huron_RampManager";
 
 		private _doorsOpen = false;
 		private _heightAGL = 0;
@@ -1819,7 +1826,7 @@ OO_TRACE_DECL(SERVER_TaruPod_DoorManager) =
 	{
 		params ["_vehicle"];
 
-		scriptName "spawnSERVER_TaruPod_DoorManager";
+		scriptName "SERVER_TaruPod_DoorManager";
 
 		private _doorsOpen = false;
 		private _heightAGL = 0;
@@ -2082,4 +2089,27 @@ SERVER_MonitorProximityRoundRequests =
 			} forEach _requests;
 		};
 	};
+};
+
+Logistics_SourceResources = [];
+
+Logistics_GetSourceResources =
+{
+	params ["_tag"];
+
+	private _index = Logistics_SourceResources findIf { (_x select 0) == _tag };
+	if (_index == -1) exitWith { [] };
+
+	Logistics_SourceResources select _index select 1
+};
+
+Logistics_SetSourceResources =
+{
+	params ["_tag", "_resources"];
+
+	private _index = Logistics_SourceResources findIf { (_x select 0) == _tag };
+
+	if (_index == -1) then { _index = count Logistics_SourceResources };
+
+	Logistics_SourceResources set [_index, [_tag, _resources]];
 };

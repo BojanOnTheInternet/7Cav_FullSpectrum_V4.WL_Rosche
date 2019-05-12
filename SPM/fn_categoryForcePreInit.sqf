@@ -21,12 +21,18 @@ OO_TRACE_DECL(SPM_ForceRating_CreateForce) =
 
 	if (_unitRating == 0) exitWith { [] };
 
-	private _forceRating = _unitRating;
 	private _force = [];
-	while { _forceRating < _totalRating } do
+
+	private _count = floor (_totalRating / _unitRating);
+	for "_i" from 1 to _count do
 	{
 		_force pushBack ([objNull, _unitRating] call OO_CREATE(ForceRating));
-		_forceRating = _forceRating + _unitRating;
+	};
+
+	private _remainder = _totalRating - (_unitRating * _count);
+	if (_remainder > 0) then
+	{
+		_force pushBack ([objNull, _remainder] call OO_CREATE(ForceRating));
 	};
 
 	_force
@@ -46,16 +52,16 @@ OO_BEGIN_STRUCT(ForceRating);
 	OO_DEFINE_PROPERTY(ForceRating,Rating,"SCALAR",0);
 OO_END_STRUCT(ForceRating);
 
-OO_TRACE_DECL(SPM_ForceUnit_GetGroups) =
+OO_TRACE_DECL(SPM_ForceUnit_GetGroup) =
 {
 	params ["_forceUnit"];
 
-	private _groups = [];
+	private _group = grpNull;
 	{
-		if (alive _x) then { _groups pushBackUnique group _x };
+		if (not isNull group _x) exitWith { _group = group _x };
 	} forEach OO_GET(_forceUnit,ForceUnit,Units);
 
-	_groups
+	_group
 };
 
 OO_TRACE_DECL(SPM_ForceUnit_Create) =
@@ -68,7 +74,7 @@ OO_TRACE_DECL(SPM_ForceUnit_Create) =
 
 OO_BEGIN_STRUCT(ForceUnit);
 	OO_OVERRIDE_METHOD(ForceUnit,RootStruct,Create,SPM_ForceUnit_Create);
-	OO_DEFINE_METHOD(ForceUnit,GetGroups,SPM_ForceUnit_GetGroups);
+	OO_DEFINE_METHOD(ForceUnit,GetGroup,SPM_ForceUnit_GetGroup);
 	OO_DEFINE_PROPERTY(ForceUnit,Vehicle,"OBJECT",objNull);
 	OO_DEFINE_PROPERTY(ForceUnit,Units,"ARRAY",[]);
 OO_END_STRUCT(ForceUnit);
@@ -175,16 +181,18 @@ OO_TRACE_DECL(SPM_Force_Rebalance) =
 	// East
 
 	private _eastCallups = OO_GET(_category,ForceCategory,CallupsEast);
+	private _eastRatings = OO_GET(_category,ForceCategory,RatingsEast);
 	private _eastForceReserves = OO_GET(_category,ForceCategory,Reserves);
 	private _difficulty = OO_GET(_category,ForceCategory,DifficultyLevel);
 
 	private _changes = [[], [], [], _eastForceReserves];
 
+	//BUG: Retirement variable is on the group, and we rely on the Rating's vehicle to find the group.  But if the group is dismounted, we'll think they're still active
 	private _eastUnitsActiveForce = [];
 	private _eastUnitsRetiringForce = [];
 	{
-		private _retiring = ((group driver OO_GET(_x,ForceRating,Vehicle)) getVariable "SPM_Force_Retiring");
-		if (isNil "_retiring") then { _eastUnitsActiveForce pushBack _x } else { _eastUnitsRetiringForce pushBack _x };
+		private _retiring = ((group driver OO_GET(_x,ForceRating,Vehicle)) getVariable ["SPM_Force_Retiring", false]);
+		if (_retiring) then { _eastUnitsRetiringForce pushBack _x } else { _eastUnitsActiveForce pushBack _x };
 	} forEach _eastForce;
 
 	private _eastRating = 0;
@@ -242,6 +250,7 @@ OO_TRACE_DECL(SPM_Force_Rebalance) =
 	private _callupTypes = [];
 	private _callupType = [];
 	private _callupIndex = 0;
+	private _ratingIndex = 0;
 
 	while { _forceAdvantageWest > 0 } do
 	{
@@ -256,9 +265,12 @@ OO_TRACE_DECL(SPM_Force_Rebalance) =
 			if (count (_x select 1) > 0) then
 			{
 				_callup = _x; // [type, [objects]]
-				_callupIndex = _eastCallups findIf { _callup select 0 == _x select 0 };
-				_rating = (_eastCallups select _callupIndex select 1 select 0) * (_eastCallups select _callupIndex select 1 select 1);
-				if (_rating <= _ratingLimit) then { _callupTypes pushBack [_callup select 0, _rating, DEFAULT_PREPLACED_UNIT_WEIGHT, _forEachIndex, true] };
+				_ratingIndex = _eastRatings findIf { _callup select 0 == _x select 0 };
+				if (_ratingIndex >= 0) then
+				{
+					_rating = (_eastRatings select _ratingIndex select 1 select 0) * (_eastRatings select _ratingIndex select 1 select 1);
+					if (_rating <= _ratingLimit) then { _callupTypes pushBack [_callup select 0, _rating, DEFAULT_PREPLACED_UNIT_WEIGHT, _forEachIndex, true] };
+				};
 			};
 		} forEach _preplacedEquipment;
 
@@ -378,27 +390,26 @@ OO_TRACE_DECL(SPM_Force_DeleteForceUnit) =
 {
 	params ["_forceUnit"];
 
-	private _remainingGroups = [];
+	private _deadGroups = [];
 	{
 		if ((vehicle _x) isKindOf "ParachuteBase") then { deleteVehicle vehicle _x };
-		if (alive _x) then { deleteVehicle _x } else { _remainingGroups pushBackUnique group _x };
+		if (not alive _x && { vehicle _x == _x }) then { _deadGroups pushBackUnique group _x } else { deleteVehicle _x };
 	} forEach OO_GET(_forceUnit,ForceUnit,Units);
 
 	{
-		if ({ alive _x } count units _x == 0) then { [_x] call SPM_DeletePatrolWaypoints };
-	} forEach _remainingGroups;
+		[_x] call SPM_DeletePatrolWaypoints;
+	} forEach _deadGroups;
+
+	// Delete the vehicle unless it is destroyed or was preplaced.
 
 	private _vehicle = OO_GET(_forceUnit,ForceUnit,Vehicle);
-
-	// The only dead bodies we delete are the ones in vehicles
-	{
-		if (not alive _x && vehicle _x != _x) then { deleteVehicle _x };
-	} forEach crew _vehicle;
-
-	// Don't delete preplaced vehicles
 	if (alive _vehicle) then
 	{
-		if (_vehicle getVariable ["SPM_Force_PreplacedEquipment", false]) then
+		if (not (_vehicle getVariable ["SPM_Force_PreplacedEquipment", false])) then
+		{
+			deleteVehicle _vehicle;
+		}
+		else
 		{
 			_vehicle engineOn false;
 			_vehicle setPilotLight false;
@@ -407,10 +418,6 @@ OO_TRACE_DECL(SPM_Force_DeleteForceUnit) =
 			_vehicle setVariable ["SPM_Force_PreplacedEquipment", nil];
 			[_vehicle, "ForceRating", nil] call TRACE_SetObjectString;
 		}
-		else
-		{
-			deleteVehicle _vehicle;
-		};
 	};
 };
 
@@ -467,30 +474,22 @@ OO_TRACE_DECL(SPM_Force_SalvageForceUnit) =
 	OO_SET(_forceCategory,ForceCategory,Reserves,_reserves);
 };
 
-OO_TRACE_DECL(SPM_Force_RetireOnFoot) =
+OO_TRACE_DECL(SPM_Force_SetRetiring) =
 {
-	params ["_units", "_retireCallback", "_passthrough"];
+	params ["_forceUnit", "_retiring"];
 
-	for "_i" from (count _units - 1) to 0 step -1 do
-	{
-		private _forceUnit = _units select _i;
-		if (not alive (OO_GET(_forceUnit,ForceUnit,Vehicle))) then
-		{
-			{
-				if ([_x] call SPM_Util_GroupMembersAreDead) then
-				{
-					_units deleteAt _i;
-				}
-				else
-				{
-					if (not (_x getVariable ["SPM_Force_Retiring", false])) then
-					{
-						[_i, _passthrough] call _retireCallback;
-					};
-				};
-			} forEach ([] call OO_METHOD(_forceUnit,ForceUnit,GetGroups));
-		};
-	};
+	private _group = group (OO_GET(_forceUnit,ForceUnit,Units) select 0);
+
+	_group setVariable ["SPM_Force_Retiring", if (_retiring) then { true } else { nil }];
+};
+
+OO_TRACE_DECL(SPM_Force_IsRetiring) =
+{
+	params ["_forceUnit"];
+
+	private _group = group (OO_GET(_forceUnit,ForceUnit,Units) select 0);
+
+	_group getVariable ["SPM_Force_Retiring", false]
 };
 
 OO_TRACE_DECL(SPM_Force_IsCombatEffectiveVehicle) =
@@ -521,16 +520,16 @@ OO_TRACE_DECL(SPM_Force_IsCombatEffectiveVehicle) =
 	_isCombatEffective
 };
 
-OO_TRACE_DECL(SPM_Force_RetireDepleted) =
+OO_TRACE_DECL(SPM_Force_ForEachDepleted) =
 {
-	params ["_units", "_retireCallback", "_passthrough"];
+	params ["_units", "_callback", "_passthrough"];
 
 	private _vehicle = objNull;
 
 	{
 		_vehicle = OO_GET(_x,ForceUnit,Vehicle);
 
-		if (not isNull _vehicle && { alive driver _vehicle } && { not ([_vehicle] call SPM_Force_IsCombatEffectiveVehicle) }) then { [_forEachIndex, _passthrough] call _retireCallback };
+		if (not isNull _vehicle && { alive driver _vehicle } && { not ([_vehicle] call SPM_Force_IsCombatEffectiveVehicle) }) then { [_forEachIndex, _passthrough] call _callback };
 	} forEach _units;
 };
 
@@ -564,12 +563,7 @@ OO_TRACE_DECL(SPM_Force_FindForceUnit) =
 		{
 			if (not isNull _key) then
 			{
-				{
-					if (_key == OO_GET(_x,ForceUnit,Vehicle)) exitWith
-					{
-						_index = _forEachIndex;
-					};
-				} forEach _units;
+				_index = _units findIf { _key == OO_GET(_x,ForceUnit,Vehicle) };
 			};
 		};
 
@@ -577,12 +571,7 @@ OO_TRACE_DECL(SPM_Force_FindForceUnit) =
 		{
 			if (not isNull _key) then
 			{
-				{
-					if (_key in ([] call OO_METHOD(_x,ForceUnit,GetGroups))) exitWith
-					{
-						_index = _forEachIndex;
-					};
-				} forEach _units;
+				_index = _units findIf { _key == ([] call OO_METHOD(_x,ForceUnit,GetGroup)) };
 			};
 		};
 
@@ -591,10 +580,7 @@ OO_TRACE_DECL(SPM_Force_FindForceUnit) =
 			_index = [_units, OO_GET(_key,ForceUnit,Vehicle)] call SPM_Force_FindForceUnit;
 			if (_index == -1) then
 			{
-				{
-					_index = [_units, _x] call SPM_Force_FindForceUnit;
-					if (_index != -1) exitWith {};
-				} forEach ([] call OO_METHOD(_key,ForceUnit,GetGroups));
+				_index = [_units, [] call OO_METHOD(_key,ForceUnit,GetGroup)] call SPM_Force_FindForceUnit;
 			};
 		};
 	};

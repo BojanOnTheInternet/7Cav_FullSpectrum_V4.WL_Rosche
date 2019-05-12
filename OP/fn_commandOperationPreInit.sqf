@@ -244,7 +244,7 @@ OO_TRACE_DECL(OP_GetMission) =
 	OP_OperationNumber = OP_OperationNumber + 1;
 	private _name = format ["%1 Operation %2", if (isServer) then { "Server" } else { vehicleVarName player }, OP_OperationNumber];
 	OO_SET(_mission,Strongpoint,Name,_name);
-	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeObject);
+	OO_SET(_mission,Strongpoint,InitializeObject,SERVER_InitializeCategoryObject);
 
 	_reference = OO_REFERENCE(_mission);
 	_selection = [_reference, _center, _radius, _name, if (isServer) then { objNull } else { player }];
@@ -258,11 +258,6 @@ SPM_Command_OperationSides = ["csat", "civilian", "syndikat"];
 OO_TRACE_DECL(SPM_Command_OperationSetGarrisonSide) =
 {
 	params ["_garrison", "_side"];
-
-	private _area = OO_GET(_garrison,ForceCategory,Area);
-	private _center = OO_GET(_area,StrongpointArea,Position);
-	private _innerRadius = OO_GET(_area,StrongpointArea,InnerRadius);
-	private _outerRadius = OO_GET(_area,StrongpointArea,OuterRadius);
 
 	switch (_side) do
 	{
@@ -280,8 +275,8 @@ OO_TRACE_DECL(SPM_Command_OperationSetGarrisonSide) =
 		case "civilian":
 		{
 			OO_SET(_garrison,ForceCategory,SideEast,civilian);
-			OO_SET(_garrison,InfantryGarrisonCategory,HouseOutdoors,false);
-
+			OO_SET(_garrison,InfantryGarrisonCategory,HouseOutdoors,true);
+	
 			OO_SET(_garrison,ForceCategory,RatingsEast,SPM_InfantryGarrison_RatingsCivilian);
 			OO_SET(_garrison,ForceCategory,CallupsEast,SPM_InfantryGarrison_CallupsCivilian);
 			OO_SET(_garrison,InfantryGarrisonCategory,InitialCallupsEast,SPM_InfantryGarrison_CallupsCivilian);
@@ -1497,18 +1492,17 @@ OO_TRACE_DECL(OP_COMMAND__OperationAddArmor) =
 	if (_eastParameter select 0 == 0) then
 	{
 		private _callups = [];
+		private _ratings = [];
 		switch (_eastParameter select 2) do
 		{
-			case "cars": { _callups = SPM_MissionAdvance_Patrol_CallupsEast };
-			case "offroads": { _callups = SPM_MissionAdvance_Patrol_CallupsSyndikat };
-			case "apcs": { _callups = SPM_Armor_CallupsEastAPCs };
-			case "tanks": { _callups = SPM_Armor_CallupsEastTanks };
-			case "helicopters": { _callups = SPM_Armor_CallupsEastAir };
-			case "airdefense": { _callups = SPM_Armor_CallupsEastAirDefense };
+			case "cars": { _callups = SPM_MissionAdvance_Patrol_CallupsEast; _ratings = SPM_MissionAdvance_Patrol_RatingsEast; };
+			case "offroads": { _callups = SPM_MissionAdvance_Patrol_CallupsSyndikat; _ratings = SPM_MissionAdvance_Patrol_RatingsSyndikat; };
+			case "apcs": { _callups = SPM_Armor_CallupsEastAPCs; _ratings = SPM_Armor_RatingsEastAPCs; };
+			case "tanks": { _callups = SPM_Armor_CallupsEastTanks; _ratings = SPM_Armor_RatingsEastTanks; };
+			case "helicopters": { _callups = SPM_Armor_CallupsEastAir; _ratings = SPM_Armor_RatingsEastAir; };
+			case "airdefense": { _callups = SPM_Armor_CallupsEastAirDefense; _ratings = SPM_Armor_RatingsEastAirDefense; };
 		};
 		OO_GET(_armor,ForceCategory,CallupsEast) append _callups;
-
-		private _ratings = _callups apply { [_x select 0, (_x select 1) select [0, 2]] };
 		OO_GET(_armor,ForceCategory,RatingsEast) append _ratings;
 	};
 
@@ -1555,9 +1549,6 @@ OO_TRACE_DECL(OP_COMMAND__OperationAddPatrolPerimeter) =
 	private _armor = _categories select 0;
 
 	private _patrol = _categories select 0;
-	private _area = OO_GET(_patrol,InfantryPatrolCategory,Area);
-	private _innerRadius = OO_GET(_area,StrongpointArea,InnerRadius);
-	private _outerRadius = OO_GET(_area,StrongpointArea,OuterRadius);
 
 	private _sizeParameter = [_parameters, "-size"] call OP_COMMAND_GetParsedParameter;
 	private _directionParameter = [_parameters, "-direction"] call OP_COMMAND_GetParsedParameter;
@@ -1699,6 +1690,7 @@ OP_COMMAND__OperationSetGarrison_Usage =
 	[
 		["-initial", false, true, "SCALAR"],
 		["-housing", false, true, "STRING", nil, SPM_Command_OperationGarrisonHousing],
+		["-outdoors", false, true, "STRING", nil, ["true", "false"]],
 		["-occupants", false, true, "#RANGE"],
 		["-reserves", false, true, "SCALAR"],
 		["-maintain", false, true, "SCALAR"],
@@ -1739,6 +1731,7 @@ OO_TRACE_DECL(OP_COMMAND__OperationSetGarrison) =
 
 	private _initialParameter = [_parameters, "-initial"] call OP_COMMAND_GetParsedParameter;
 	private _housingParameter = [_parameters, "-housing"] call OP_COMMAND_GetParsedParameter;
+	private _outdoorsParameter = [_parameters, "-outdoors"] call OP_COMMAND_GetParsedParameter;
 	private _occupantsParameter = [_parameters, "-occupants"] call OP_COMMAND_GetParsedParameter;
 	private _reservesParameter = [_parameters, "-reserves"] call OP_COMMAND_GetParsedParameter;
 	private _maintainParameter = [_parameters, "-maintain"] call OP_COMMAND_GetParsedParameter;
@@ -1778,11 +1771,17 @@ OO_TRACE_DECL(OP_COMMAND__OperationSetGarrison) =
 	{
 		switch (_housingParameter select 2) do
 		{
-			case "inner": { OO_SET(_garrison,InfantryGarrisonCategory,HousingPreference, 0.2) };
-			case "middle": { OO_SET(_garrison,InfantryGarrisonCategory,HousingPreference, 0.5) };
-			case "outer": { OO_SET(_garrison,InfantryGarrisonCategory,HousingPreference, 0.8) };
-			case "random": { OO_SET(_garrison,InfantryGarrisonCategory,HousingPreference, -1) };
+			case "inner": { OO_SET(_garrison,InfantryGarrisonCategory,HousingDistribution, 0.2) };
+			case "middle": { OO_SET(_garrison,InfantryGarrisonCategory,HousingDistribution, 0.5) };
+			case "outer": { OO_SET(_garrison,InfantryGarrisonCategory,HousingDistribution, 0.8) };
+			case "random": { OO_SET(_garrison,InfantryGarrisonCategory,HousingDistribution, -1) };
 		};
+	};
+
+	if (_outdoorsParameter select 0 == 0) then
+	{
+		private _outdoors = (_outdoorsParameter select 2) == "true";
+		OO_SET(_garrison,InfantryGarrisonCategory,HouseOutdoors,_outdoors);
 	};
 
 	if (_occupantsParameter select 0 == 0) then

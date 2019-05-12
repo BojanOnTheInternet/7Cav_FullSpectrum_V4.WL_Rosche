@@ -28,6 +28,11 @@ OO_TRACE_DECL(SPM_GuardObject_WS_GuardArrived) =
 	{
 		[_leader] join _guardGroup;
 		deleteGroup _group;
+	}
+	else
+	{
+		private _waypoint = [_guardGroup, getPos _leader] call SPM_AddPatrolWaypoint;
+		_waypoint setWaypointType "hold";
 	};
 };
 
@@ -79,6 +84,7 @@ OO_TRACE_DECL(SPM_GuardObject_Update) =
 
 	{
 		private _soloGroup = createGroup (side _x);
+
 		[_x] join _soloGroup;
 		_x setBehaviour "safe";
 		_x setCombatMode "green";

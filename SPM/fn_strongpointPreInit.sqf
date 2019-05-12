@@ -265,7 +265,7 @@ OO_TRACE_DECL(SPM_Category_InitializeObject) =
 	private _strongpoint = OO_GETREF(_category,Category,Strongpoint);
 	private _initializeObject = OO_GET(_strongpoint,Strongpoint,InitializeObject);
 
-	[_category,_object] call _initializeObject;
+	[_category, _object] call _initializeObject;
 };
 
 OO_TRACE_DECL(SPM_Category_Update) =

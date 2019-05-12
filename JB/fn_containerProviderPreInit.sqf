@@ -35,7 +35,7 @@ JB_CG_SourceSetupClient =
 {
 	params ["_source", "_containerType", "_abandonDistance", "_abandonDelay"];
 
-	_source addAction [format ["Get empty %1", [_containerType] call JB_fnc_displayName], compile format ["[_this select 0, ""%1"", %2, %3] call JB_CG_GetEmptyContainer", _containerType, _abandonDistance, _abandonDelay], nil, 0, false, true, "", format ["[""%1""] call JB_CG_GetEmptyContainerCondition", _containerType], 5];
+	_source addAction [format ["Get empty %1 from %2", [_containerType] call JB_fnc_displayName, [typeOf _source] call JB_fnc_displayName], compile format ["[_this select 0, ""%1"", %2, %3] call JB_CG_GetEmptyContainer", _containerType, _abandonDistance, _abandonDelay], nil, 0, false, true, "", format ["[""%1""] call JB_CG_GetEmptyContainerCondition", _containerType], 5];
 };
 
 if (not isServer && hasInterface) exitWith {};
@@ -62,6 +62,7 @@ JB_CG_S_AddContainer =
 
 JB_CG_MonitorContainers =
 {
+	private _container = objNull;
 	private _containers = [];
 	private _discardedContainers = [];
 
@@ -84,26 +85,33 @@ JB_CG_MonitorContainers =
 		{
 			_container = _containers select _i;
 
-			_currentlyAbandoned = true;
-			_velocity = velocity _container;
-			_position = getPosASL _container;
-
-			// If somewhere on the world map, check to see if it has been abandoned or has been left empty for too long a time
-			if (_position findIf { _x < 0 || _x > worldSize } in [-1,2]) then
+			if (isNull _container) then
 			{
-				_abandonParameters = _container getVariable "JB_CG_AbandonParameters";
-				_abandonTime = _container getVariable ["JB_CG_AbandonTime", 1e30];
-				_cleanupTime = _container getVariable ["JB_CG_CleanupTime", 1e30];
+				_discardedContainers pushBack _container;
+			}
+			else
+			{
+				_currentlyAbandoned = true;
+				_velocity = velocity _container;
+				_position = getPosASL _container;
+
+				// If somewhere on the world map, check to see if it has been abandoned or has been left empty for too long a time
+				if (_position findIf { _x < 0 || _x > worldSize } in [-1,2]) then
+				{
+					_abandonParameters = _container getVariable "JB_CG_AbandonParameters";
+					_abandonTime = _container getVariable ["JB_CG_AbandonTime", 1e30];
+					_cleanupTime = _container getVariable ["JB_CG_CleanupTime", 1e30];
 			
-				_nearbyPlayerIndex = (allPlayers select { not (_x isKindOf "HeadlessClient_F") }) findIf { ((getPosASL _x distance _position) <= (_abandonParameters select 0) && vectorMagnitude (_velocity vectorDiff (velocity _x)) < JB_CG_ABANDON_SPEED) };
-				_abandonTime = if (_nearbyPlayerIndex != -1) then { 1e30 } else { _abandonTime min (diag_tickTime + (_abandonParameters select 1)) };
-				_container setVariable ["JB_CG_AbandonTime", _abandonTime];
+					_nearbyPlayerIndex = (allPlayers select { not (_x isKindOf "HeadlessClient_F") }) findIf { ((getPosASL _x distance _position) <= (_abandonParameters select 0) && vectorMagnitude (_velocity vectorDiff (velocity _x)) < JB_CG_ABANDON_SPEED) };
+					_abandonTime = if (_nearbyPlayerIndex != -1) then { 1e30 } else { _abandonTime min (diag_tickTime + (_abandonParameters select 1)) };
+					_container setVariable ["JB_CG_AbandonTime", _abandonTime];
 
-				_empty = [_container] call JB_fnc_containerIsEmpty;
-				_cleanupTime = if (not _empty) then { 1e30 } else { _cleanupTime min (diag_tickTime + JB_CG_CLEANUP_DELAY) };
-				_container setVariable ["JB_CG_CleanupTime", _cleanupTime];
+					_empty = [_container] call JB_fnc_containerIsEmpty;
+					_cleanupTime = if (not _empty) then { 1e30 } else { _cleanupTime min (diag_tickTime + JB_CG_CLEANUP_DELAY) };
+					_container setVariable ["JB_CG_CleanupTime", _cleanupTime];
 
-				if (_abandonTime < diag_tickTime || _cleanupTime < diag_tickTime) then { _discardedContainers pushBack _container };
+					if (_abandonTime < diag_tickTime || _cleanupTime < diag_tickTime) then { _discardedContainers pushBack _container };
+				};
 			};
 		};
 
@@ -115,10 +123,14 @@ JB_CG_MonitorContainers =
 
 			JB_CG_CS call JB_fnc_criticalSectionLeave;
 
-			for "_i" from count _discardedContainers to 0 step -1 do
+			for "_i" from count _discardedContainers - 1 to 0 step -1 do
 			{
-				(_discardedContainers select _i) setVelocity [0,0,1]; sleep 0.1; // Jostle the object to cause nearby objects to react to its movement
-				deleteVehicle (_discardedContainers select _i);
+				_container = _discardedContainers select _i;
+				if (not isNull _container) then
+				{
+					_container setVelocity [0,0,1]; sleep 0.1; // Jostle the object to cause nearby objects to react to its movement
+					deleteVehicle _container;
+				};
 			};
 		};
 

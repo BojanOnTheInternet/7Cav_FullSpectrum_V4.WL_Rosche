@@ -1,7 +1,7 @@
 // How frequently the driver will check to see if the engine should be turned off (seconds)
-#define ENGINE_OFF_INTERVAL 1
+#define ENGINE_OFF_INTERVAL 99999
 // How many seconds the driver will sit stationary before turning off the vehicle engine (seconds, multiple of ENGINE_OFF_INTERVAL)
-#define ENGINE_OFF_DELAY 4
+#define ENGINE_OFF_DELAY 99999
 
 JB_MDI_RandomSpawnPosition =
 {
@@ -23,7 +23,7 @@ JB_MDI_ManualDriveCondition =
 {
 	if (not isNull driver vehicle player) exitWith { false };
 
-	if (player != gunner vehicle player) exitWith { false };
+	if (not (player in [gunner vehicle player, commander vehicle player])) exitWith { false };
 
 	(call JB_MDI_IsManualDriveVehicle)
 };
@@ -34,7 +34,7 @@ JB_MDI_ServerMonitor =
 	{
 		params ["_player", "_driver", "_vehicle"];
 
-		waitUntil { sleep 0.1; _player != gunner _vehicle || { not alive _driver } || { vehicle _driver == _driver } || { not (lifeState _player in ["HEALTHY", "INJURED"]) } };
+		waitUntil { sleep 0.1; not (_player in [gunner _vehicle, commander _vehicle]) || { not alive _driver } || { vehicle _driver == _driver } || { not (lifeState _player in ["HEALTHY", "INJURED"]) } };
 
 		deleteVehicle _driver;
 		_vehicle engineOn false;
@@ -57,7 +57,9 @@ JB_MDI_ManualDrive =
 		if (not local _vehicle) exitWith {};
 
 		private _group = createGroup side _player;
+
 		private _driver = _group createUnit ["B_crew_F", call JB_MDI_RandomSpawnPosition, [], 0, "can_collide"];
+		_driver setName "";
 		_driver assignAsDriver _vehicle;
 		_driver moveInDriver _vehicle;
 
@@ -93,7 +95,7 @@ JB_MDI_CancelManualDriveCondition =
 
 	if (isPlayer driver vehicle player ) exitWith { false };
 
-	if (player != gunner vehicle player) exitWith { false };
+	if (not (player in [gunner vehicle player, commander vehicle player])) exitWith { false };
 
 	(call JB_MDI_IsManualDriveVehicle)
 };

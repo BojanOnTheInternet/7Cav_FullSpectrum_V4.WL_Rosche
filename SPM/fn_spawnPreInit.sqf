@@ -34,6 +34,16 @@ SPM_RecordDeath =
 	};
 #endif
 
+	private _units = units group _body select { alive _x };
+	if (count _units == 0) then
+	{
+		[group _body] call SPM_DeletePatrolWaypoints;
+	}
+	else
+	{
+		group _body selectLeader selectRandom _units;
+	};
+
 	if (isNil "SPM_Corpses") then
 	{
 		SPM_Corpses = [];
@@ -347,6 +357,11 @@ SPM_MoveIntoVehicle =
 	if (count _cargo > 0) exitWith { _cargo };
 };
 
+//BUG: ARMA 1.90.  A vehicle that isn't local will fail the moveIn commands.  The AI will have to move to the vehicle and then get in.  While the vehicle
+// can be made local, any turrets cannot.  So if a vehicle is going to load a driver and a gunner, and the vehicle is made local, the driver gets in
+// correctly while the gunner must mount the vehicle manually.  Sometimes the driver doesn't wait for the gunner.  So the entire crew is left to get in
+// manually in hopes that they'll sort things out.
+
 SPM_SpawnGroup =
 {
 	params ["_side", "_descriptor", "_position", "_direction", ["_loadInVehicles", true, [true]], ["_vehiclePositions", [], [[]]]];
@@ -386,7 +401,7 @@ SPM_SpawnGroup =
 			if (_type isKindOf "Man") then
 			{
 				private _unit = _group createUnit [_type, _position vectorAdd _unitPosition, [], 0, "can_collide"];
-				[_unit] join _group; // Necessary if side _type != side _group.  Because... ARMA.  As of ARMA v1.82
+				[_unit] join _group; //ARMA: Necessary if side _type != side _group.  As of ARMA v1.82
 				_unit setRank _rank;
 				_unit setDir (_direction + _unitDirection);
 				[_unit] call _unitInitialize;
@@ -398,7 +413,7 @@ SPM_SpawnGroup =
 			}
 			else
 			{
-				_vehicle = [_type, _position vectorAdd _unitPosition, _direction + _unitDirection] call SPM_fnc_spawnVehicle;
+				_vehicle = [_type, _position vectorAdd _unitPosition, _direction + _unitDirection, ""] call SPM_fnc_spawnVehicle;
 				[_vehicle] call _unitInitialize;
 				_vehicles pushBack _vehicle;
 				_group addVehicle _vehicle;
@@ -406,8 +421,6 @@ SPM_SpawnGroup =
 
 		}
 	} forEach _descriptor;
-
-	[units _group] call SERVER_CurateEditableObjects;
 
 	{
 		_x addEventHandler ["Killed", SPM_RecordDeath];
@@ -420,23 +433,9 @@ SPM_SpawnVehicle =
 {
 	params ["_type", "_position", "_direction", "_special"];
 
-	private _curate = true;
-	if (_special isEqualType []) then
-	{
-		private _index = _special findIf { _x == "do_not_curate" };
-		if (_index != -1) then
-		{
-			_curate = false;
-			_special deleteAt _index;
-		};
-		_special = if (count _special > 0) then { _special select 0 } else { "" };
-	};
-
 	private _vehicle = createVehicle [_type, call SPM_Util_RandomSpawnPosition, [], 0, _special];
 	_vehicle setDir _direction;
 	[_vehicle, _position] call SPM_Util_SetPosition;
-
-	if (_curate) then { [[_vehicle]] call SERVER_CurateEditableObjects };
 
 	if (_vehicle isKindOf "AllVehicles") then
 	{
@@ -465,8 +464,6 @@ SPM_SpawnMineField =
 		private _type = _types select (floor random (count _types));
 		_mines pushBack (_type createVehicle (_position vectorAdd _minePosition));
 	};
-
-	[_mines] call SERVER_CurateEditableObjects;
 
 	_mines
 };

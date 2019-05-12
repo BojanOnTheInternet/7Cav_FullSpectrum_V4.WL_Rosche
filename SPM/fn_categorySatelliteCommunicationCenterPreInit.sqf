@@ -50,8 +50,11 @@ OO_TRACE_DECL(SPM_SatelliteCommunicationCenter_CreateSatellitePhone) =
 
 	private _objectPosition = [];
 
-	private _box = ["Box_CSAT_Equip_F", call SPM_Util_RandomSpawnPosition, _direction + 270, "can_collide"] call SPM_fnc_spawnVehicle;
-	private _phone = ["Land_SatellitePhone_F", call SPM_Util_RandomSpawnPosition, 0, "can_collide"] call SPM_fnc_spawnVehicle;
+	private _box = ["Box_CSAT_Equip_F", call SPM_Util_RandomSpawnPosition, _direction + 270] call SPM_fnc_spawnVehicle;
+	[_category, _box] call OO_GET(_category,Category,InitializeObject);
+
+	private _phone = ["Land_SatellitePhone_F", call SPM_Util_RandomSpawnPosition, 0] call SPM_fnc_spawnVehicle;
+	[_category, _phone] call OO_GET(_category,Category,InitializeObject);
 
 	[_box] call JB_fnc_containerClear;
 	[_box] call JB_fnc_containerLock;
@@ -115,7 +118,7 @@ OO_TRACE_DECL(SPM_SatelliteCommunicationCenter_CreateSatelliteAntenna) =
 {
 	params ["_category", "_position", "_direction", "_simulationEnabled"];
 
-	private _antenna = ["Land_SatelliteAntenna_01_F", _position, _direction, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle;
+	private _antenna = ["Land_SatelliteAntenna_01_F", _position, _direction] call SPM_fnc_spawnVehicle;
 	_antenna enableSimulation _simulationEnabled;
 
 	OO_GET(_category,SatelliteCommunicationCenterCategory,_CenterObjects) append [_antenna];
@@ -142,11 +145,11 @@ OO_TRACE_DECL(SPM_SatelliteCommunicationCenter_CreateCamoflagedVehicle) =
 	private _camoNetType = OO_GET(_category,SatelliteCommunicationCenterCategory,CamoNetType);
 
 	_objectPosition = _position vectorAdd ([[0.000, 2.000, 0.000], _direction] call SPM_Util_RotatePosition2D);
-	private _truck = [_truckType, _objectPosition, (_direction - 90) - 5 + random 10, "can_collide"] call SPM_fnc_spawnVehicle;
+	private _truck = [_truckType, _objectPosition, (_direction - 90) - 5 + random 10] call SPM_fnc_spawnVehicle;
 	_truck setRepairCargo 0; // Prevent players from repairing on the enemy vehicle
 	[_category, _truck] call OO_GET(_category,Category,InitializeObject);
 
-	private _camoNet = [_camoNetType, _position, _direction, ["can_collide", "do_not_curate"]] call SPM_fnc_spawnVehicle;
+	private _camoNet = [_camoNetType, _position, _direction] call SPM_fnc_spawnVehicle;
 
 	OO_GET(_category,SatelliteCommunicationCenterCategory,_CenterObjects) append [_camoNet, _truck];
 

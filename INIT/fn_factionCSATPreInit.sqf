@@ -113,13 +113,13 @@ SPM_Armor_RatingsEastAPCs = SPM_Armor_CallupsEastAPCs apply { [_x select 0, (_x 
 SPM_Armor_CallupsEastTanks =
 [
 	["rhs_t80um",
-		[60, 2, 1.0,
+		[60, 2, 0.8,
 			{
 				params ["_unit"];
 				_unit addEventHandler ["Fired",{(_this select 0) setVehicleAmmo 1}];
 			}]],
-	["LOP_US_T72BB",
-		[60, 2, 0.4,
+	["rhs_t90a_TV",
+		[60, 2, 0.2,
 			{				
 				params ["_unit"];
 				_unit addEventHandler ["Fired",{(_this select 0) setVehicleAmmo 1}];

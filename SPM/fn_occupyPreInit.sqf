@@ -34,6 +34,7 @@ OO_TRACE_DECL(SPM_Occupy_SideToNumber) =
 	[east, west, independent, civilian] find (_this select 0)
 };
 
+// The number of building positions and the number of people in the building
 OO_TRACE_DECL(SPM_Occupy_OccupationCounts) =
 {
 	params ["_building"];
@@ -53,7 +54,7 @@ OO_TRACE_DECL(SPM_Occupy_GetOccupiers) =
 
 	private _occupiers = [];
 	{
-		if (alive (_x select 0) && { isNil "_side" || { side group (_x select 0) == _side } }) then { _occupiers pushBack [(_x select 0), _forEachIndex] };
+		if (alive (_x select 0) && { isNil "_side" || { side group (_x select 0) == _side } }) then { _occupiers pushBack [_x select 0, _forEachIndex] };
 	} forEach (_occupyData select 1);
 
 	_occupiers
@@ -265,6 +266,7 @@ OO_TRACE_DECL(SPM_Occupy_JoinBuildingGroup) =
 	if (isNull (_groups select _sideIndex)) then
 	{
 		private _group = createGroup (side _unit);
+
 		_group setBehaviour (behaviour _unit);
 		_group setCombatMode (combatMode _unit);
 		_group setSpeedMode (speedMode _unit);
@@ -329,7 +331,11 @@ OO_TRACE_DECL(SPM_Occupy_CompleteOccupation) =
 
 	// This is to ensure that an object that is used to serve as an occupy point is visible once the first unit
 	// is garrisoned there.  Infantry garrisons use a campfire which the garrison code hides when created.
-	if (isObjectHidden _building) then { _building hideObjectGlobal false };
+	if (isObjectHidden _building) then
+	{
+		_building hideObjectGlobal false;
+		if (call SERVER_IsNightOperation) then { _building inflame true };
+	};
 
 	private _watchDirection = random 360;
 	private _watchDistance = 100;
@@ -384,6 +390,7 @@ OO_TRACE_DECL(SPM_Occupy_ApproachBuilding_Unit) =
 	if (count _buildingEntry == 0) exitWith { false };
 
 	private _soloGroup = createGroup side _group;
+
 	_soloGroup setBehaviour (behaviour _unit);
 	_soloGroup setCombatMode (combatMode _unit);
 	_soloGroup setSpeedMode (speedMode _unit);

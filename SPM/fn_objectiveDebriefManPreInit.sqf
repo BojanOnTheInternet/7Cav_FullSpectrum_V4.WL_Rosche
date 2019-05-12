@@ -101,7 +101,11 @@ OO_TRACE_DECL(SPM_ObjectiveDebriefMan_Update) =
 			private _unitProvider = OO_GET(_objective,ObjectiveDebriefMan,UnitProvider);
 			private _unit = OO_GET(_unitProvider,UnitProvider,Unit);
 			
-			if (not alive _unit) exitWith { OO_SET(_objective,MissionObjective,State,"failed") };
+			if (not alive _unit) exitWith
+			{
+				OO_SET(_objective,MissionObjective,State,"failed");
+				[_objective, ["Debrief failed.  Target has been killed", ""], "event"] call OO_METHOD(_objective,Category,SendNotification);
+			};
 
 			if (_unit getVariable ["ODM_S_State", false]) then
 			{
@@ -123,7 +127,9 @@ OO_TRACE_DECL(SPM_ObjectiveDebriefMan_Update) =
 						sleep 1;
 						_unit action ["salute"];
 
-						[_unit] join createGroup [civilian, true];
+						private _group = createGroup [civilian, true];
+						[_unit] join _group;
+
 						doStop _unit;
 					};
 				};

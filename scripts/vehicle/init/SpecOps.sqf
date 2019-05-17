@@ -21,7 +21,7 @@
     "Join special operations", 
     {
         params ["_target", "_caller", "_actionId", "_arguments"];
-		_caller setVariable ["SPM_SpecialOperations", true];
+		_caller setVariable ["SPM_SpecialOperations", true, true];
     },
     [],
     1.5, 
@@ -40,7 +40,7 @@
     "Leave special operations", 
     {
         params ["_target", "_caller", "_actionId", "_arguments"];
-		_caller setVariable ["SPM_SpecialOperations", false];
+		_caller setVariable ["SPM_SpecialOperations", false, true];
     },
     [],
     1.5, 

@@ -1,20 +1,12 @@
 params ["_uid"];
 
-private _s3File = '
-	#include "\serverscripts\zeusserverscripts\zeus_assigner.sqf"
-';
+private _uids = call compile preprocessFile "scripts\zeusGUIDs.sqf";
 
-private _numbers = _s3File splitstring ",""";
+_uids params ["_uidDevelopers", "_uidMissionControllers", "_uidMilitaryPolice", "_uidCameraOperators"];
 
-private _uidMissionControllers = _numbers select { _x select [0,3] == "765" };
-
+if (_uid in _uidDevelopers) exitWith { "DD" };
 if (_uid in _uidMissionControllers) exitWith { "MC" };
-
-private _uidMilitaryPolice =
-[
-	
-];
-
 if (_uid in _uidMilitaryPolice) exitWith { "MP" };
+if (_uid in _uidCameraOperators) exitWith { "CO" };
 
 ""

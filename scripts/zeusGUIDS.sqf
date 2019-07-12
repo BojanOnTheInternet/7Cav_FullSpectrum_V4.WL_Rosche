@@ -3,13 +3,7 @@ private _uidMissionControllers = [];
 private _uidMilitaryPolice = [];
 private _uidCameraOperators = [];
 
-private _s3File = '
-	#include "\serverscripts\zeusserverscripts\zeus_assigner.sqf"
-';
-
-private _numbers = _s3File splitstring ",""";
-
-private _uidMissionControllers = _numbers select { _x select [0,3] == "765" };
+#include "\serverscripts\zeusserverscripts\tac2_zeus_guids.sqf"
 
 _uidDevelopers pushBackUnique "76561198168754324"; // Dakota.N
 _uidDevelopers pushBackUnique "76561198114637526"; // JB

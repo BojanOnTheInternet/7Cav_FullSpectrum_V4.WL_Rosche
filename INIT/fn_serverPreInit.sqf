@@ -482,6 +482,7 @@ OO_TRACE_DECL(SERVER_RemoteCallerCuratorType) =
 
 	"CO"
 };
+
 OO_TRACE_DECL(SERVER_COMMAND_GM__FortifyPoints) =
 {
 	params ["_pointCount"];
@@ -509,6 +510,60 @@ OO_TRACE_DECL(SERVER_COMMAND_GM__Fortify) =
 	private _command = _match select 1;
 
 	[_commandWords select [1, 1e3]] call (_command select 1);
+};
+
+OO_TRACE_DECL(SERVER_COMMAND_GM__LoyaltyPoints) =
+{
+	(_this select 0) params ["_points", "_name"];
+	_points = parseNumber (_points);
+	_player = [_name] call SERVER_COMMAND_MP_GetPlayerByName;
+
+	[[_points], LOYALTY_fnc_addPointsLocal] remoteExec ["call", _player];
+	[format ["%1 points have been awarded %2", _points, name _player]] call SPM_Util_MessageCaller;
+
+	[OP_COMMAND_RESULT_MATCHED]
+};
+
+OO_TRACE_DECL(SERVER_COMMAND_GM__LoyaltyCooldown) =
+{
+	(_this select 0) params ["_cooldown", "_name"];
+	_cooldown = parseNumber (_cooldown) * 60;
+	_player = [_name] call SERVER_COMMAND_MP_GetPlayerByName;
+
+	[[_cooldown], LOYALTY_fnc_setCooldownLocal] remoteExec ["call", _player];
+	[format ["%1 minutes of cooldown has been set for %2", _cooldown/60, name _player]] call SPM_Util_MessageCaller;
+
+	[OP_COMMAND_RESULT_MATCHED]
+};
+
+OO_TRACE_DECL(SERVER_COMMAND_GM__Loyalty) =
+{
+	params ["_commandWords"];
+
+	private _commands =
+	[
+		["points", SERVER_COMMAND_GM__LoyaltyPoints],
+		["cooldown", SERVER_COMMAND_GM__LoyaltyCooldown]
+	];
+
+	private _match = [_commandWords select 0, _commands] call OP_COMMAND_Match;
+
+	if (_match select 0 < 0) exitWith { _match };
+
+	private _command = _match select 1;
+
+	[_commandWords select [1, 1e3]] call (_command select 1);
+};
+
+OO_TRACE_DECL(SERVER_COMMAND_GM__Weather) =
+{
+	(_this select 0) params ["_state"];
+
+	ZeusEnabledWeather = (toLower _state) isEqualTo "true";
+
+	[format ["Automatic weather has been set to %1", _state]] call SPM_Util_MessageCaller;
+
+	[OP_COMMAND_RESULT_MATCHED]
 };
 
 OO_TRACE_DECL(SERVER_COMMAND_GM__MissionEndGet) =
@@ -642,6 +697,8 @@ OO_TRACE_DECL(SERVER_COMMAND_GM) =
 	[
 		["curate", SERVER_COMMAND_GM__Curate],
 		["fortify", SERVER_COMMAND_GM__Fortify],
+		["loyalty", SERVER_COMMAND_GM__Loyalty],
+		["weather", SERVER_COMMAND_GM__Weather],
 		["missionend", SERVER_COMMAND_GM__MissionEnd]
 	];
 

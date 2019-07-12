@@ -32,16 +32,16 @@ OO_TRACE_DECL(SPM_SAMCategory_CreateSAMUnit) =
 
 	_vehicle setVariable ["SPM_SpawnTime", diag_tickTime];
 	_vehicle addEventHandler ["Fired", {
-		params ["_vehicle"];
-		_vehicle setVehicleAmmo 1;
-
-		// Limit how quickly each launcher can fire missiles
-		[_vehicle] spawn {
+		params ["_unit", "_weapon", "_muzzle", "_mode", "_ammo", "_magazine", "_projectile", "_gunner"];
+		_unit setVehicleAmmo 1;	
+		
+		// Limit how fast the launcher will fire
+		[_unit] spawn {
 			params ["_v"];
 			_v setCombatMode "BLUE";
-			sleep random [20, 30, 40];
+			sleep random [5, 20, 30];
 			_v setCombatMode "RED";
-		}
+		};	
 	}];
 
 	_vehicle

@@ -647,6 +647,12 @@ DOC_MissionController = "<font size='16'>Mission Controller</font><br/>
 As a mission controller, you have full access to Zeus as well as some additional keyboard bindings and text commands.  Note that all commands keywords can be abbreviated to as few as three letters.  For example, the command 'mc advance stop' can be shortened to 'mc adv sto'.<br/>";
 
 DOC_MissionControllerCommands = "
+<font face='EtelkaMonospacePro' size='10'>mc loyalty points add (amount) (playername)</font><br/><br/>
+Adds loyalty points to a player. You should usually give out about 50 points at a time.<br/><br/>
+<font face='EtelkaMonospacePro' size='10'>mc loyalty cooldown (length) (playername)</font><br/><br/>
+Sets the loyalty cooldown spawn for a player, in minutes, since their last vehicle spawn.<br/><br/>
+<font face='EtelkaMonospacePro' size='10'>mc weather true/false</font><br/><br/>
+Enables or disables automatic weather and time acceleration.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc missionend get</font><br/><br/>
 Returns the number of minutes until the map rolls over.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc missionend add (minutes)</font><br/><br/>
@@ -661,10 +667,6 @@ Stops the advance system.<br/><br/>
 Starts the advance system.  If suspended, the next operation in the advance is started.  If stopped, a new advance is created.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc advance suspend</font><br/><br/>
 Stops the current operation of the advance with a 'no verdict' result.  If the advance is later started, activities begin with the next operation in the advance.<br/><br/>
-<font face='EtelkaMonospacePro' size='10'>mc advance show</font><br/><br/>
-Shows the current operational advance.  A CSAT flag is placed on the map at the center of each operation in the advance.  This is private map information.<br/><br/>
-<font face='EtelkaMonospacePro' size='10'>mc advance hide</font><br/><br/>
-Hides the current operational advance.  Any CSAT flags showing an operational advance are removed from the map.<br/>
 <font face='EtelkaMonospacePro' size='10'>mc specops stop</font><br/><br/>
 Stop the current special operation sequence.  To stop only the current mission, CTRL+SHIFT+MB1 on it on the map and issue the command 'mc operation stop'<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc curate all</font><br/><br/>

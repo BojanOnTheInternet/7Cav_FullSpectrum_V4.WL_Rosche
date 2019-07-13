@@ -249,11 +249,11 @@ force force ace_finger_maxRange = 10;
 // ACE Pylons
 force force ace_pylons_enabledForZeus = true;
 force force ace_pylons_enabledFromAmmoTrucks = true;
-force force ace_pylons_rearmNewPylons = false;
+force force ace_pylons_rearmNewPylons = true;
 force force ace_pylons_requireEngineer = false;
 force force ace_pylons_requireToolkit = true;
 force force ace_pylons_searchDistance = 15;
-force force ace_pylons_timePerPylon = 5;
+force force ace_pylons_timePerPylon = 10;
 
 // ACE Quick Mount
 force force ace_quickmount_distance = 5;

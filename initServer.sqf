@@ -1,5 +1,8 @@
 diag_log "initServer start";
 
+#include "\serverscripts\zeusserverscripts\secretKey.sqf"
+missionNamespace setVariable["LOYALTY_CIPHER", CIPHERSECRETKEY, true];
+
 #include "SPM\strongpoint.h"
 
 addMissionEventHandler ["PlayerConnected", SERVER_PlayerConnected];

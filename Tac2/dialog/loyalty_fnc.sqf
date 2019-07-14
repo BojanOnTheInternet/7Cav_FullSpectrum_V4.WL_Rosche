@@ -203,7 +203,7 @@ LOYALTY_fnc_addPointsLocal =
 
 LOYALTY_fnc_getPointsLocal =
 {
-	parseNumber (["Tac2Loyalty_PlayerPoints", 0] call SECURE_getProfileVariable);
+	parseNumber (["Tac2Loyalty_PlayerPoints", "0"] call SECURE_getProfileVariable);
 };
 
 LOYALTY_fnc_getCooldownLocal =

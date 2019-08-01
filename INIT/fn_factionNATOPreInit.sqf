@@ -9,9 +9,9 @@ SPM_AirDefense_RatingsWest =
 	["B_Heli_Light_01_armed_F", [20, 2]],
 	["B_Heli_Light_01_dynamicLoadout_F", [20, 2]],
 	["B_Plane_CAS_01_F", [120, 1]],
-	["B_Plane_CAS_01_dynamicLoadout_F", [240, 1]],
-//	["B_Plane_Fighter_01_F", [75, 1]],
-//	["B_Plane_Fighter_01_Stealth_F", [75, 1]],
+	["B_Plane_CAS_01_dynamicLoadout_F", [120, 1]],
+	["B_Plane_Fighter_01_F", [120, 1]],
+	["B_Plane_Fighter_01_Stealth_F", [120, 1]],
 	["B_T_VTOL_01_armed_F", [60, 3]],
 
 	["O_Heli_Attack_02_F", [50, 2]],
@@ -31,6 +31,7 @@ SPM_AirDefense_RatingsWest =
 //	["I_Plane_Fighter_04_F", [75, 1]]
 
 	["RHS_AH64D", [50, 2]],
+	["RHS_AH1Z", [50,2]],
 	["FIR_A10C", [120, 1]],
 	["FIR_F16C_Blank", [120, 1]]
 ];
@@ -92,7 +93,6 @@ SPM_Armor_RatingsWestTanks =
 _bradley_rating = 60;
 SPM_Armor_RatingsWestAPCs =
 [
-//	["B_APC_Wheeled_01_cannon_F", [25, 3]],
 	// Bradleys
 	["RHS_M2A3", [_bradley_rating, 1]],
 	["RHS_M2A3_BUSKI", [_bradley_rating, 1]],
@@ -106,6 +106,15 @@ SPM_Armor_RatingsWestAPCs =
 	["RHS_M6_wd", [_bradley_rating, 1]],
 	["RHS_M2A2", [_bradley_rating, 1]],
 	["RHS_M2A2_BUSKI", [_bradley_rating, 1]],
+	
+	// Weisel
+	["I_LT_01_cannon_F", [40, 1]],
+
+	// Warrior
+	["I_APC_tracked_03_cannon_F", [_bradley_rating, 1]],
+
+	// NATO Vanilla APC
+	["B_APC_Wheeled_01_cannon_F", [_bradley_rating, 1]],
 
 	["O_APC_Tracked_02_cannon_F", [30, 3]],
 	["O_APC_Wheeled_02_rcws_F", [20, 3]],
@@ -115,7 +124,7 @@ SPM_Armor_RatingsWestAPCs =
 ];
 
 _apache_rating = 100;
-_ah1z_rating = 50;
+_ah1z_rating = 100;
 _littlebird_rating = 40;
 _eagle_rating = 180;
 SPM_Armor_RatingsWestAir =
@@ -130,8 +139,9 @@ SPM_Armor_RatingsWestAir =
 	["RHS_AH64DGrey", [_apache_rating, 1]],
 	["RHS_AH64D_wd", [_apache_rating, 1]],
 
-	["LOP_AH1Z_CS_Base", [_ah1z_rating, 2]],
-	["LOP_AH1Z_GS_Base", [_ah1z_rating, 2]],
+	["LOP_AH1Z_CS_Base", [_ah1z_rating, 1]],
+	["LOP_AH1Z_GS_Base", [_ah1z_rating, 1]],
+	["RHS_AH1Z", [_ah1z_rating,1]],
 
 	["RHS_MELB_AH6M", [_littlebird_rating, 1]],
 	["RHS_MELB_AH6M_H", [_littlebird_rating, 1]],

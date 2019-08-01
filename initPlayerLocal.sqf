@@ -90,17 +90,6 @@ CLIENT_FlagVehicleFilter =
 player addEventHandler ["GetInMan", { if ([typeOf (_this select 2), CLIENT_FlagVehicleFilter] call JB_fnc_passesTypeFilter) then { (_this select 2) forceFlagTexture "\A3\Data_F\Flags\Flag_NATO_CO.paa" } }];
 player addEventHandler ["GetOutMan", { if ({ isPlayer _x } count crew (_this select 2) == 0) then { (_this select 2) forceFlagTexture "" } }];
 
-// Set the player speaker to novoice so that we don't get group chatter.  The arsenal resets the player speaker, so detect that each time it happens.
-[] spawn
-{
-	while { true } do
-	{
-		[player, "novoice"] remoteExec ["setSpeaker", 0];
-		waitUntil { sleep 1; not isNull (uinamespace getvariable "RSCDisplayArsenal") };
-		waitUntil { sleep 1; isNull (uinamespace getvariable "RSCDisplayArsenal") };
-	};
-};
-
 // Disable faction changes due to team killing, vehicle destruction, etc.
 player addEventHandler ["HandleRating", { 0 }];
 

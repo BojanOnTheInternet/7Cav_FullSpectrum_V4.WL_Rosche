@@ -44,9 +44,7 @@ TypeFilter_TransportRotory =
 	["B_Heli_Transport_03_unarmed_F", true],
 	["B_Heli_Transport_03_F", true],
 	["rhsusf_CH53E_USMC*", true],
-	["RHS_UH1Y_UNARMED*", true],
-	["RHS_UH1Y_FFAR*", true],
-	["RHS_UH1Y*", true],
+	["RHS_UH1*", true],
 	["B_CTRG_Heli_Transport_01_sand_F", true],
 	["B_CTRG_Heli_Transport_01_tropic_F", true],
 	["rhs_uh1h_hidf_unarmed", true],
@@ -113,6 +111,7 @@ TypeFilter_ArmoredVehicles =
 	["MBT_03_base_F", true], // Leopard 2
 	["MBT_01_base_F", true], // Most other western tanks (Abrams, Merkava)
 	["RHS_M2A3*", true], // Add Bradleys here too so Manual Drive works for all
+	["B_AFV_Wheeled_01_cannon_F", true], // Rookiat tank destoryer
 	["All", false]
 ];
 
@@ -138,7 +137,7 @@ TypeFilter_LogisticsVehicles =
 
 TypeFilter_InfantryVehicles =
 [
-	// Disable logistics vics
+	// Disable logistics vics since we wildcard them below
 	["rhsusf_M108*", false],
 	["rhsusf_M107*", false],
 	["rhsusf_M97*", false],
@@ -176,6 +175,9 @@ TypeFilter_InfantryVehicles =
 	["I_HMG_01_*", true],
 	["Ship", true],
 	["RHS_M2A3*", true], // Bradleys
+	["LT_01_base_F", true], // Wiesel
+	["I_APC_tracked_03_base_F", true], // Warrior AFV
+	["B_APC_Wheeled_01_cannon_F", true], // NATO Vanilla APC (Badger IFV)
 	["B_MRAP_01_F", true], // MATV
 	["rhsusf_m998*", true], // Soft top HMMWV
 	["rhsusf_m102*", true], //HMMWV
@@ -647,8 +649,10 @@ DOC_MissionController = "<font size='16'>Mission Controller</font><br/>
 As a mission controller, you have full access to Zeus as well as some additional keyboard bindings and text commands.  Note that all commands keywords can be abbreviated to as few as three letters.  For example, the command 'mc advance stop' can be shortened to 'mc adv sto'.<br/>";
 
 DOC_MissionControllerCommands = "
-<font face='EtelkaMonospacePro' size='10'>mc loyalty points add (amount) (playername)</font><br/><br/>
-Adds loyalty points to a player. You should usually give out about 50 points at a time.<br/><br/>
+<font face='EtelkaMonospacePro' size='10'>mc loyalty cavbucks (amount) (playername)</font><br/><br/>
+Adds CavBucks to a player. MCC leaders should usually get 1, or 2 if it was a difficult job.<br/><br/>
+<font face='EtelkaMonospacePro' size='10'>mc loyalty points (amount) (playername)</font><br/><br/>
+Adds loyalty points to a player. For MCC rewards, use CavBucks instead.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc loyalty cooldown (length) (playername)</font><br/><br/>
 Sets the loyalty cooldown spawn for a player, in minutes, since their last vehicle spawn.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc weather true/false</font><br/><br/>

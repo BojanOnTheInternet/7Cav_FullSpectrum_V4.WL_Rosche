@@ -12,12 +12,16 @@ class Tac2 {
 		class initAresModules;
 		class modAddGResistance;
 		class modAddVehiclePermissions;
+		class modAddFortify;
 		class modChainUnit;
 		class modDefineCivilians;
 		class modSetUndercoverAuto;
 		class modSetUndercoverManual;
 		class modUnchainUnit;
 		class modUnsetUndercover;
+		class modHideObjects;
+		class modCopyTerrainObject;
+		class modSetRelHeight;
 	};
 	class modules_impl {
 		file = "Tac2\modules\impl";

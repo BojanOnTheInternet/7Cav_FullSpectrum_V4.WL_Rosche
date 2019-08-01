@@ -6,6 +6,9 @@ if (_state == "init") then
 	[] call HUD_Infantry_Initialize;
 
 	player setVariable ["SPM_BranchOfService", "infantry"];
+	player setVariable ["TAC2_canFortify", true];
+	player setvariable ["ACE_IsEngineer", 2];
+
 
 	[player] call CLIENT_SetInfantryVehiclePermissions;
 	{

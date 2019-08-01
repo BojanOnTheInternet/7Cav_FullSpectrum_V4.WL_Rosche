@@ -2,7 +2,7 @@ author = "Vex.W, Dakota.N, JB & Bojan";
 overviewPicture = "media\images\loading.jpg";
 
 loadScreen = "media\images\loading.jpg";
-onLoadName = "7Cav Full Spectrum v4.3.2";
+onLoadName = "7Cav Full Spectrum v4.4.0";
 onLoadMission = "Welcome to 7th Cavalry Tactical Realism! Join us on TeamSpeak at ts3.7cav.us Password: 7thCavalry";
 
 briefing = 0;
@@ -33,11 +33,12 @@ enableTargetDebug = 1;
 
 class Extended_PreInit_EventHandlers {
 	cScripts_preInit = "0 spawn compile preprocessFileLineNumbers 'cScripts\CavFnc\cScripts_preInit.sqf'";
-	tac2_customModules = call compile preprocessFileLineNumbers "Tac2\tac2_preInit.sqf";
+	tac2_preInit = call compile preprocessFileLineNumbers "Tac2\tac2_preInit.sqf";
 	settings = call compile preprocessFileLineNumbers "simple_splint\functions\fn_initsettings.sqf";
 };
 class Extended_PostInit_EventHandlers {
 	cScripts_postInit = "0 spawn compile preprocessFileLineNumbers 'cScripts\CavFnc\cScripts_postInit.sqf'";
+	tac2_postInit = call compile preprocessFileLineNumbers "Tac2\tac2_postInit.sqf";
 };
 
 
@@ -60,7 +61,8 @@ corpseManagerMode = 0;
 #include "JB\dialog_containerEdit.hpp"
 #include "OP\dialog_command.hpp"
 #include "OP\dialog_inspector.hpp"
-#include "Tac2\dialog\loyalty_gui.hpp"
+#include "Tac2\loyalty\loyalty_gui.hpp"
+#include "Tac2\loyalty\loyalty_hud.hpp"
 
 class CfgFunctions
 {
@@ -158,7 +160,8 @@ class RscTitles
 	#include "scripts\vehicle\crew\CrewList.hpp"	// Occupants HUD for vehicles
 	#include "scripts\vehicle\paradrop\Paradrop.hpp"// Indicators for HALO and static lines
 	#include "Diagnostics\dialog_stripChart.hpp"
-	#include "Tac2\dialog\loyalty_gui.hpp"
+	#include "Tac2\loyalty\loyalty_gui.hpp"
+	#include "Tac2\loyalty\loyalty_hud.hpp"
 };
 
 class Params

@@ -4,7 +4,7 @@
   _return = true;
 
   // Check if Apollo
-  if(!(typeOf player in _apollo_units)) then {
+  if(!(player getVariable ["TAC2_canFortify", false])) then {
     _return = false;
     ["You must be an Apollo unit to fortify.", 3] call JB_fnc_showBlackScreenMessage;
   };

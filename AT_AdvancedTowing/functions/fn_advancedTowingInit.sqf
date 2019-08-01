@@ -662,6 +662,7 @@ SA_Can_Pickup_Tow_Ropes = {
 
 SA_TOW_SUPPORTED_VEHICLES =
 [
+	["UGV_02_Base_F", false],
 	["Car", true],
 	["Tank", true],
 	["B_Boat_Armed_01_minigun_F", true]

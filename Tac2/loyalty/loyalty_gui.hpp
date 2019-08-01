@@ -30,7 +30,8 @@ class RscTUTVehDialog
 	};
 	controls[]={
 		btnSpawn,
-		vehTextureDropdown
+		vehTextureDropdown,
+		btnSpawnCavBucks
 	};
 	objects[]={};
 
@@ -96,7 +97,7 @@ class RscTUTVehDialog
 		onLBSelChanged  = "[] spawn LOYALTY_fnc_vehicleInfo;";
 		colorText[] = {1,1,1,1};
 		colorDisabled[] = {1,1,1,0.25};
-		colorScrollbar[] = {1,0,0,0};
+		colorScrollbar[] = {1,1,1,1};
 		colorSelect[] = {1,1,1,1};
 		colorSelect2[] = {1,1,1,1};
 		colorSelectBackground[] = cavYellow;
@@ -107,6 +108,14 @@ class RscTUTVehDialog
 		y = 0.3225 * safezoneH + safezoneY;
 		w = 0.2325 * safezoneW;
 		h = 0.41 * safezoneH;
+		
+		class ListScrollBar {
+			thumb = "#(argb,8,8,3)color(0.922,0.78,0.161,1)";
+			arrowEmpty = "#(argb,8,8,3)color(0.631,0.631,0.631,1)";
+			arrowFull = "#(argb,8,8,3)color(0.922,0.78,0.161,1)";
+			border = "#(argb,8,8,3)color(0.631,0.631,0.631,1)";
+			shadow = 0;
+		};
 	};
 
 	// Right box background
@@ -144,7 +153,7 @@ class RscTUTVehDialog
 		colorSelect[] = white;
 		colorSelectBackground[] = cavYellow;
 		x = 0.518 * safezoneW + safezoneX;
-		y = 0.4 * safezoneH + safezoneY;
+		y = 0.42 * safezoneH + safezoneY;
 		w = 0.1 * safezoneW;
 	};
 	
@@ -156,11 +165,27 @@ class RscTUTVehDialog
 		colorBackgroundFocused[] = cavYellow;
 		colorDisabled[] = cavGrey;
 		colorText[] = white;
-		onButtonClick  = "[] call LOYALTY_fnc_vehicleCreate;";
+		onButtonClick  = "['points'] call LOYALTY_fnc_vehicleCreate;";
 		x = 0.531 * safezoneW + safezoneX;
 		y = 0.48 * safezoneH + safezoneY;
 		w = 0.18 * safezoneW;
 		h = 0.0375 * safezoneH;
+	};
+
+	// CavBucks spawn button
+	class btnSpawnCavBucks: RscShortcutButton{
+		idc = 14;
+		text = "";
+		size = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.8)";
+		colorBackground[] = cavYellow; 
+		colorBackgroundFocused[] = cavYellow;
+		colorDisabled[] = cavGrey;
+		colorText[] = white;
+		onButtonClick  = "['CavBucks'] call LOYALTY_fnc_vehicleCreate;";
+		x = 0.625 * safezoneW + safezoneX;
+		y = 0.42 * safezoneH + safezoneY;
+		w = 0.1 * safezoneW;
+		h = 0.0215 * safezoneH;
 	};
 
 	// Right bottom box background

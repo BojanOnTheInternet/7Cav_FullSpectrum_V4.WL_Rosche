@@ -536,6 +536,18 @@ OO_TRACE_DECL(SERVER_COMMAND_GM__LoyaltyCooldown) =
 	[OP_COMMAND_RESULT_MATCHED]
 };
 
+OO_TRACE_DECL(SERVER_COMMAND_GM__LoyaltyCavBucks) =
+{
+	(_this select 0) params ["_cavBucks", "_name"];
+	_cavBucks = parseNumber (_cavBucks);
+	_player = [_name] call SERVER_COMMAND_MP_GetPlayerByName;
+
+	[[_cavBucks], LOYALTY_fnc_addCavBucksLocal] remoteExec ["call", _player];
+	[format ["%1 CavBucks have been awarded %2", _cavBucks, name _player]] call SPM_Util_MessageCaller;
+
+	[OP_COMMAND_RESULT_MATCHED]
+};
+
 OO_TRACE_DECL(SERVER_COMMAND_GM__Loyalty) =
 {
 	params ["_commandWords"];
@@ -543,7 +555,8 @@ OO_TRACE_DECL(SERVER_COMMAND_GM__Loyalty) =
 	private _commands =
 	[
 		["points", SERVER_COMMAND_GM__LoyaltyPoints],
-		["cooldown", SERVER_COMMAND_GM__LoyaltyCooldown]
+		["cooldown", SERVER_COMMAND_GM__LoyaltyCooldown],
+		["cavbucks", SERVER_COMMAND_GM__LoyaltyCavBucks]
 	];
 
 	private _match = [_commandWords select 0, _commands] call OP_COMMAND_Match;

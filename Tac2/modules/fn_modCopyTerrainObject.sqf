@@ -8,4 +8,4 @@ _obj = _obj select {
 _obj = _obj select 0;
 
 private _newObj = typeof _obj createVehicle getPos _obj;
-[[_newObj]] call SERVER_CurateEditableObjects;
+[[_newObj]] remoteExec ["SERVER_CurateEditableObjects", 2];

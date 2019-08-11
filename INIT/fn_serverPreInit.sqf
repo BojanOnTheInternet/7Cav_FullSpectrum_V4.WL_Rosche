@@ -404,13 +404,11 @@ OO_TRACE_DECL(SERVER_CuratorAssign) =
 
 	if (not isNull _curator) then
 	{
-		removeAllCuratorAddons _curator;
 
 		switch (_curatorType) do
 		{
 			case "MC":
 			{
-				_curator addCuratorAddons activatedAddons;
 				_curator addCuratorEditableObjects [curatorEditableObjects SERVER_CuratorMaster, false];
 
 				SERVER_MissionControllers pushBackUnique _curator;
@@ -579,6 +577,21 @@ OO_TRACE_DECL(SERVER_COMMAND_GM__Weather) =
 	[OP_COMMAND_RESULT_MATCHED]
 };
 
+OO_TRACE_DECL(SERVER_COMMAND_GM__DiceRoll) =
+{
+	(_this select 0) params [["_sides", "0"]];
+	_sides = parseNumber _sides;
+	if (_sides < 2) then {
+		[format ["Die must have at least 2 sides"]] call SPM_Util_MessageCaller;
+	}
+	else {
+		private _value = round(random(_sides));
+		[format ["1d%1: %2", _sides, _value]] call SPM_Util_MessageCaller;
+	};
+
+	[OP_COMMAND_RESULT_MATCHED]
+};
+
 OO_TRACE_DECL(SERVER_COMMAND_GM__MissionEndGet) =
 {
 	[format ["Match will try to end in %1 minutes", ((MissionEndTime - serverTime)/60)]] call SPM_Util_MessageCaller;
@@ -712,7 +725,8 @@ OO_TRACE_DECL(SERVER_COMMAND_GM) =
 		["fortify", SERVER_COMMAND_GM__Fortify],
 		["loyalty", SERVER_COMMAND_GM__Loyalty],
 		["weather", SERVER_COMMAND_GM__Weather],
-		["missionend", SERVER_COMMAND_GM__MissionEnd]
+		["missionend", SERVER_COMMAND_GM__MissionEnd],
+		["diceroll", SERVER_COMMAND_GM__DiceRoll]
 	];
 
 	private _match = [_commandWords select 0, _commands] call OP_COMMAND_Match;

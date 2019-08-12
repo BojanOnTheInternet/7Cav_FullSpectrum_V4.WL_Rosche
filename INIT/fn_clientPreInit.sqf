@@ -663,6 +663,8 @@ Returns the number of minutes until the map rolls over.<br/><br/>
 Adds extra minutes to the mission end timer. If given a negative value, it will reduce the time.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc fortify points (amount)</font><br/><br/>
 Adds (or removes, if negative) an amount of points from the FOB fortify budget.<br/><br/>
+<font face='EtelkaMonospacePro' size='10'>mc diceroll (sides)</font><br/><br/>
+Roll an n-sided die.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc operation stop</font><br/><br/>
 Stops the selected operation.  To select an operation, go to the Zeus map and CTRL+SHIFT+MB1 on the operation.<br/><br/>
 <font face='EtelkaMonospacePro' size='10'>mc advance stop</font><br/><br/>

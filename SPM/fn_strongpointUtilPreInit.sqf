@@ -1476,26 +1476,32 @@ OO_TRACE_DECL(SPM_Util_IsUrbanEnvironment) =
 // Figure out the direction of the closest house.  If nothing, then the closest fence or wall.  Returns _default if no context for direction,
 OO_TRACE_DECL(SPM_Util_EnvironmentAlignedDirection) =
 {
-	params ["_position", "_default", ["_radius", 20, [0]]];
+    params ["_position", "_default", ["_radius", 20, [0]]];
 
-	private _objects = (_position nearObjects ["NonStrategic", _radius]) apply { [_position distance _x, getDir _x] };
-	_objects append ((_position nearRoads _radius) apply { [_position distance _x, _x getDir ((roadsConnectedTo _x) select 0)] });
+    private _objects = (_position nearObjects ["NonStrategic", _radius]) apply { [_position distance _x, getDir _x] };
 
-	if (count _objects > 0) exitWith
-	{
-		_objects sort true;
-		_objects select 0 select 1;
-	};
+    private _roads = _position nearRoads _radius;
 
-	private _objects = ((nearestTerrainObjects [_position, ["wall"], _radius]) apply { [_position distance _x, getDir _x] });
+    _objects append (_roads select { getDir _x != 0 } apply { [_position distance _x, getDir _x ] }); // Roads with inherent directions (includes runways)
+    _objects append (_roads select { count roadsConnectedTo _x > 0 } apply { [_position distance _x, _x getDir ((roadsConnectedTo _x) select 0)] }); // Roads connected to other roads
 
-	if (count _objects > 0) exitWith
-	{
-		_objects sort true;
-		_objects select 0 select 1;
-	};
+    if (count _objects > 0) exitWith
+    {
+        _objects sort true;
+        _objects select 0 select 1;
+    };
 
-	if (isNil "_default") then { nil } else { _default }
+    private _objects = ((nearestTerrainObjects [_position, ["wall"], _radius]) apply { [_position distance _x, getDir _x] });
+
+    if (count _objects > 0) exitWith
+    {
+        _objects sort true;
+        _objects select 0 select 1;
+    };
+
+    if (isNil "_default") exitWith { nil };
+   
+    _default
 };
 
 OO_TRACE_DECL(SPM_Util_FireTurretWeapon) =

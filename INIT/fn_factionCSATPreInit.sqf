@@ -132,7 +132,7 @@ SPM_Armor_RatingsEastTanks = SPM_Armor_CallupsEastTanks apply { [_x select 0, (_
 // 180pts
 SPM_Armor_CallupsEastAir =
 [
-	["RHS_Ka52_vvsc", [180, 1, 1.0,
+	["RHS_Ka52_vvsc", [180, 1, 0.2,
 			{
 			}]]
 ];

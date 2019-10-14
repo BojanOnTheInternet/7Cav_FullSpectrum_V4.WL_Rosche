@@ -16,7 +16,7 @@ if (not isServer && hasInterface) exitWith {};
 #define CALLUP_INTERVAL	[10,10]
 #define RETIRE_INTERVAL	[10,10]
 #else
-#define CALLUP_INTERVAL	[120,360]
+#define CALLUP_INTERVAL	[300,600]
 #define RETIRE_INTERVAL	[60,60]
 #endif
 

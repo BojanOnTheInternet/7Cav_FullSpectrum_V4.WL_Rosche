@@ -11,7 +11,7 @@ if (_roleMissionControllers findIf { [_roleDescription, _x] call JB_fnc_regexMat
 
 private _roleMilitaryPolice =
 [
-	"military police"
+	"military polic*"
 ];
 
 if (_roleMilitaryPolice findIf { [_roleDescription, _x] call JB_fnc_regexMatch } >= 0) exitWith { "MP" };

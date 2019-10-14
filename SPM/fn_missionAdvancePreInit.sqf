@@ -436,7 +436,7 @@ OO_TRACE_DECL(SPM_MissionAdvance_AddFactionCSAT) =
 			OO_SETREF(_headquarters,HeadquartersCategory,Garrison,_garrison);
 			_headquartersCommanded = _headquartersCommanded apply { OO_REFERENCE(_x) };
 			OO_SET(_headquarters,HeadquartersCategory,Commanded,_headquartersCommanded);
-			OO_SET(_headquarters,HeadquartersBivouackedCategory,SurrenderRating,_garrisonCountInitial*0.20*_soldierRatingEast);
+			OO_SET(_headquarters,HeadquartersBivouackedCategory,SurrenderRating,8*_soldierRatingEast);
 			private _description =
 			[
 				"Destroy bivouacked Novorossiya Armed Forces garrison",

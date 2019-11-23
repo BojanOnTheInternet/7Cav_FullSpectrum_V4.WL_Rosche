@@ -39,6 +39,9 @@ leadership positions, and can be used on vehicles regardless of level.</t>
 
 	_dropDown = ((findDisplay 1601) displayCtrl (13));
 	_dropDown ctrlShow false;
+
+	_spawnLocationDropDown =  ((findDisplay 1601) displayCtrl (15));
+	_spawnLocationDropDown ctrlShow false;
 };
 
 
@@ -69,7 +72,7 @@ LOYALTY_fnc_vehicleInfo =
 
 	_vehicleIndex = parseNumber (lbData [7, lbCurSel 7]);
 	_vehicle = LoyaltyVehicles select _vehicleIndex;
-	_vehicle params ["_vehicleClass", "_levelCost", "_cavBuckCost", "_cooldownCost", "_maxVehicles", "_message", "_condition", "_callBack"];
+	_vehicle params ["_vehicleClass", "_levelCost", "_cavBuckCost", "_cooldownCost", "_maxVehicles", "_message", "_defaultSpawn", "_condition", "_callBack"];
 
 
 	_dropDown = ((findDisplay 1601) displayCtrl (13));
@@ -79,6 +82,26 @@ LOYALTY_fnc_vehicleInfo =
 		_dropDown lbSetData [_textureIndex, str getArray (_x >> "textures")];
 	} foreach ("true" configClasses (configfile >> "CfgVehicles" >>_vehicleClass >> "textureSources"));
 	_dropDown ctrlShow true;
+
+
+	_spawnLocationDropDown = ((findDisplay 1601) displayCtrl (15));
+	lbCLear _spawnLocationDropDown;
+
+	_landIndex = -1;
+	_airIndex = -1;
+	if (!isNull loyaltySpawn) then { 
+		_landIndex = _spawnLocationDropDown lbAdd "Land Vehicle Spawn";
+		_spawnLocationDropDown lbSetData [_landIndex, "land"];
+	};
+	if (!isNull loyaltyAirSpawn) then { 
+		_airIndex = _spawnLocationDropDown lbAdd "Air Vehicle Spawn";
+		_spawnLocationDropDown lbSetData [_airIndex, "air"];
+	};
+	if (_defaultSpawn == "land") then { _spawnLocationDropDown lbSetCurSel _landIndex; }; 
+	if (_defaultSpawn == "air") then { _spawnLocationDropDown lbSetCurSel _airIndex; }; 
+
+	_spawnLocationDropDown ctrlShow true;
+
 
 	_textCbo = ((findDisplay 1601) displayCtrl (8));	
 	_textCbo ctrlSetStructuredText parseText format 
@@ -102,7 +125,7 @@ LOYALTY_fnc_vehicleInfo =
 
 LOYALTY_fnc_showSpawnButton =
 {
-	_this select 0 params ["_vehicleClass", "_levelCost", "_cavBuckCost", "_cooldownCost", "_maxVehicles", "_message", "_condition", "_callBack"];
+	_this select 0 params ["_vehicleClass", "_levelCost", "_cavBuckCost", "_cooldownCost", "_maxVehicles", "_message", "_defaultSpawn", "_condition", "_callBack"];
 
 	_spawnButton = (findDisplay 1601) displayCtrl 6;
 	_spawnButtonCavBucks = (findDisplay 1601) displayCtrl 14;
@@ -132,7 +155,14 @@ LOYALTY_fnc_showSpawnButton =
 		_reason = format ["Unlocked at level %1", _levelCost];
 	};
 
-	if (_maxVehicles != -1 && _vehicleClass countType vehicles >= _maxVehicles) then {
+	_vehicleInstances = 0;
+	{
+		if ((_x isKindOf _vehicleClass) && (alive _x)) then {
+			_vehicleInstances = _vehicleInstances + 1
+		};
+	} forEach vehicles;
+
+	if (_maxVehicles != -1 && _vehicleInstances >= _maxVehicles) then {
 		_allowRegularSpawn = false;
 		_allowCavBucksSpawn = false;
 		_reason = format ["Maximum number reached (%1)", _maxVehicles];
@@ -170,10 +200,16 @@ LOYALTY_fnc_vehicleCreate =
 	_vehicle = LoyaltyVehicles select _vehicleIndex;
 	_vehicle params ["_vehicleClass", "_levelCost", "_cavBuckCost", "_cooldownCost", "_maxVehicles", "_message", "_condition", "_callBack"];
 
+
+	_spawnLocation = lbData [15, lbCurSel 15];
 	_emptyPos = (getPos player) findEmptyPosition [5, 50, (_vehicleClass)];
-	if (!isNull loyaltySpawn) then { 
+	if (!isNull loyaltySpawn && _spawnLocation == "land") then { 
 		_emptyPos = (getPos loyaltySpawn) findEmptyPosition [5, 50, (_vehicleClass)];
 	};
+	if (!isNull loyaltySpawn && _spawnLocation == "air") then { 
+		_emptyPos = (getPos loyaltyAirSpawn) findEmptyPosition [5, 50, (_vehicleClass)];
+	};
+
 
 	if (count _emptyPos == 0) then { hint "Vehicle cannot be spawned here"; }
 	else
@@ -191,10 +227,10 @@ LOYALTY_fnc_vehicleCreate =
 			[_cavBuckCost] call LOYALTY_fnc_spendCavBucksLocal;
 		};
 
-		[_veh] call _callBack;		
+		[_veh] call _callBack;
+		player setPos (getPos _veh vectorAdd (boundingBoxReal _veh select 0));	
 	};
-	closeDialog 1601;
-
+	closeDialog 1601;	
 };
 
 LOYALTY_fnc_getPointsForLevel =

@@ -233,14 +233,7 @@ SPM_Transport_CallupsEastMohawk =
 
 SPM_Transport_CallupsEastMarid =
 [
-	["LOP_US_UAZ_DshKM",
-		[1, 3, 2.0,
-			{
-				params ["_unit"];
-
-				[_unit, "greenhex", []] call BIS_fnc_initVehicle;
-			}
-		]]
+	["rhs_tigr_m_msv", [1, 3, 2.0, {}]]
 ];
 
 SPM_Transport_CallupsEastZamak =

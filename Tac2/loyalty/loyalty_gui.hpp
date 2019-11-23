@@ -31,6 +31,7 @@ class RscTUTVehDialog
 	controls[]={
 		btnSpawn,
 		vehTextureDropdown,
+		vehSpawnDropdown,
 		btnSpawnCavBucks
 	};
 	objects[]={};
@@ -156,6 +157,18 @@ class RscTUTVehDialog
 		y = 0.42 * safezoneH + safezoneY;
 		w = 0.1 * safezoneW;
 	};
+
+	// Vehicle spawn location dropdown
+	class vehSpawnDropdown: RscCombo{
+		idc = 15;
+		colorText[] = black;
+		colorBackground[] = white;
+		colorSelect[] = white;
+		colorSelectBackground[] = cavYellow;
+		x = 0.625 * safezoneW + safezoneX;
+		y = 0.42 * safezoneH + safezoneY;
+		w = 0.1 * safezoneW;
+	};
 	
 	// Spawn button
 	class btnSpawn: RscShortcutButton{
@@ -182,8 +195,8 @@ class RscTUTVehDialog
 		colorDisabled[] = cavGrey;
 		colorText[] = white;
 		onButtonClick  = "['CavBucks'] call LOYALTY_fnc_vehicleCreate;";
-		x = 0.625 * safezoneW + safezoneX;
-		y = 0.42 * safezoneH + safezoneY;
+		x = 0.531 * safezoneW + safezoneX;
+		y = 0.45 * safezoneH + safezoneY;
 		w = 0.1 * safezoneW;
 		h = 0.0215 * safezoneH;
 	};
